@@ -14,7 +14,10 @@ class Game(db.Entity):
     host = Required('Player', reverse='hostOf')
 
     def addPlayer(self, player):
-        self.players.add(player)
+        if (self.playerCount < 6):
+            self.players.add(player)
+            self.playerCount =+ 1
+        
 
     def getPlayers(self):
         return select(p for p in self.players)
