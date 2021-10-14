@@ -8,7 +8,7 @@ db = Database()
 class Game(db.Entity):
     game_id = PrimaryKey(int, auto=True) 
     name = Required(str)
-    capacity = Required(int)
+    playerCount = Required(int)
     isStarted = Required(bool)
     players = Set('Player', reverse='lobby')
     host = Required('Player', reverse='hostOf')
