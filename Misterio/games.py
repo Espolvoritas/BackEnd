@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Body
 
 game = APIRouter(prefix="/game")
 
@@ -12,7 +12,7 @@ class Game:
 	  self.players = [host]
 
 @game.post("/createNew", status_code=status.HTTP_201_CREATED)
-async def createNewGame(name: str, host: str) -> int:
+async def createNewGame(name: str = Body(...), host: str = Body(...)) -> int:
 	for x in games:
 		if x.name == name:
 			raise HTTPException(status_code=400, detail="The game name is already in use")
