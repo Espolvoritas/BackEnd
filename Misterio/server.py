@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
+from pony.orm.core import select
 
 app = FastAPI()
 
@@ -18,4 +19,3 @@ app.add_middleware(
 @app.get("/")
 async def get():
     return FileResponse(htmlfilepath)
-
