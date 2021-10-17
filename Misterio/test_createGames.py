@@ -19,7 +19,6 @@ def test_create_new_game():
 				json={"name": get_random_string(6), "host": get_random_string(6)}
 				)
     assert response.status_code == 201
-    assert type(response.json()) is int
 
 def test_create_new_game_missing_name():
     response = client.post("/game/createNew",
@@ -60,7 +59,6 @@ def test_create_new_game_repeated_name():
 				json={"name": reuse_name, "host": get_random_string(6)}
 				)
     assert response.status_code == 201
-    assert type(response.json()) is int
     #Now do the request with the same game name
     response = client.post("/game/createNew",
 		headers={"accept": "application/json",
