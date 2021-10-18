@@ -70,6 +70,17 @@ async def getAvailableGames():
 		
 	return gamelist
 
+@game.websocket("/getPlayers")
+async def getPlayers(websocket: WebSocket, userID: int = Body(...)):
+	await manager.connect(websocket, userID)
+	try:
+		await manager.broadcast(getPlayers())
+		while True:
+			print("waiting")
+	except WebSocketDisconnect:
+		manager.disconnect(websocket)
+		await manager.broadcast(getPlayers)
+
 @game.post("/getPlayersPost", status_code=status.HTTP_200_OK)
 async def getPlayersPost(userID: int = Body(...)):
 	with db_session:
