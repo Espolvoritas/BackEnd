@@ -16,7 +16,6 @@ async def createNewGame(name: str = Body(...), host: str = Body(...)):
 		new_game.addPlayer(new_player)
 		return {"game_id": new_game.game_id, "player_id": new_player.player_id}
 
-
 @game.get("/availableGames", status_code=status.HTTP_200_OK)
 async def getAvailableGames():
 	gamelist = []
@@ -34,3 +33,16 @@ async def getAvailableGames():
 		return Response(status_code=status.HTTP_204_NO_CONTENT)
 		
 	return gamelist
+
+@game.post("/getPlayersPost", status_code=status.HTTP_200_OK)
+async def getPlayersPost(userID: int = Body(...)):
+	with db_session:
+		player_list = []
+		player = db.Player.get(player_id=userID)
+		if player is None and player.lobby is None:
+			raise HTTPException(status_code=400, detail="Player does not exist or is not in a lobby")
+		current_game = player.lobby
+		players_query = select(p for p in current_game.players).order_by(lambda p: p.player_id)
+		for player in players_query:
+			player_list.append(player.nickName)
+		return player_list
