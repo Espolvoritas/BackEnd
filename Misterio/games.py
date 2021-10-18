@@ -22,7 +22,25 @@ class ConnectionManager:
 	async def send_personal_message(self, message: str, websocket: WebSocket):
 		await websocket.send_text(message)
 
+
+	async def broadcast(self, message: str):
+		for connection in self.active_connections.keys():
+			await connection.send_text(message)
+
+	@db_session
+	async def getPlayers(self):
+		player_list = []
+		for connection in self.active_connections.keys:
+			player = db.Player.get(player_id=self.active_connections[connection])
+			if player is None and player.lobby is None:
+				manager.send_personal_message(status.HTTP_400_BAD_REQUEST,connection)
+				connection.close()
+			else:
+				player_list.append(player)
+		return player_list
+		
 manager = ConnectionManager()
+
 @game.post("/createNew", status_code=status.HTTP_201_CREATED)
 async def createNewGame(name: str = Body(...), host: str = Body(...)):
 	with db_session:
