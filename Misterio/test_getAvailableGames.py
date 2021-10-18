@@ -173,6 +173,7 @@ def test_full_and_available():
             gamejson = {}
             g = games[i]
             gamejson['name'] = g.name
+            game['id'] = g.game_id
             gamejson['players'] = int(g.playerCount)
             gamejson['host'] = g.host.nickName
             gamejson['password'] = False
