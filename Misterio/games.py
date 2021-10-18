@@ -4,7 +4,25 @@ import database as db
 from pony.orm import db_session, flush, select
 
 game = APIRouter(prefix="/game")
+class connections(TypedDict):
+	websocket: WebSocket
+	userID: int
 
+class ConnectionManager:
+	def __init__(self):
+		self.active_connections: connections = {}
+
+	async def connect(self, websocket: WebSocket, userID):
+		await websocket.accept()
+		self.active_connections[websocket] = userID
+
+	def disconnect(self, websocket: WebSocket):
+		del self.active_connections[websocket]
+
+	async def send_personal_message(self, message: str, websocket: WebSocket):
+		await websocket.send_text(message)
+
+manager = ConnectionManager()
 @game.post("/createNew", status_code=status.HTTP_201_CREATED)
 async def createNewGame(name: str = Body(...), host: str = Body(...)):
 	with db_session:
