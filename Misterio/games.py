@@ -28,6 +28,7 @@ async def getAvailableGames(response: Response):
 		for g in games_query:
 			game = {}
 			game['name'] = g.name
+			game['id'] = g.game_id
 			game['players'] = int(g.playerCount)
 			game['host'] = g.host.nickName
 			game['password'] = False #We dont have passwords yet
