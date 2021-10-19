@@ -30,7 +30,7 @@ class ConnectionManager:
 	@db_session
 	async def getPlayers(self):
 		player_list = []
-		for connection in self.active_connections.keys:
+		for connection in self.active_connections.keys():
 			player = db.Player.get(player_id=self.active_connections[connection])
 			if player is None and player.lobby is None:
 				manager.send_personal_message(status.HTTP_400_BAD_REQUEST,connection)
