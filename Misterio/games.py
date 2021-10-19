@@ -36,7 +36,7 @@ class ConnectionManager:
 				manager.send_personal_message(status.HTTP_400_BAD_REQUEST,connection)
 				connection.close()
 			else:
-				player_list.append(player)
+				player_list.append(player.nickName)
 		return player_list
 		
 manager = ConnectionManager()
