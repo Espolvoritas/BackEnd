@@ -70,8 +70,8 @@ async def getAvailableGames():
 		
 	return gamelist
 
-@game.websocket("/getPlayers")
-async def getPlayers(websocket: WebSocket, userID: int = Body(...)):
+@game.websocket("/game/getPlayers/{userID}")
+async def getPlayers(websocket: WebSocket, userID: int):
 	await manager.connect(websocket, userID)
 	try:
 		await manager.broadcast(getPlayers())
