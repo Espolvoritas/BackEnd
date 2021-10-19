@@ -77,9 +77,8 @@ async def getAvailableGames():
 async def getPlayers(websocket: WebSocket, userID: int):
 	await manager.connect(websocket, userID)
 	try:
-		await manager.broadcast(getPlayers())
-		while True:
-			print("waiting")
+		players = manager.getPlayers(userID)
+		await manager.broadcast(players)
 	except WebSocketDisconnect:
 		manager.disconnect(websocket)
 		await manager.broadcast(getPlayers)
