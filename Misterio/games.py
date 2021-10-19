@@ -28,7 +28,7 @@ class ConnectionManager:
 			await connection.send_text(message)
 
 	@db_session
-	async def getPlayers(self):
+	def getPlayers(self):
 		player_list = []
 		for connection in self.active_connections.keys():
 			player = db.Player.get(player_id=self.active_connections[connection])
