@@ -11,7 +11,7 @@ client = TestClient(app)
 def get_random_string(length):
     # choose from all lowercase letter
     letters = string.ascii_lowercase
-    result_str = ''.join(random.choice(letters) for i in range(length))
+    result_str = "".join(random.choice(letters) for i in range(length))
     return result_str
 
 def clear_tables():
@@ -20,27 +20,35 @@ def clear_tables():
     
     db.db.create_tables()
 
-
 def test_no_games():
+    clear_tables()
     response = client.get("/game/availableGames")
-    assert response.status_code == 204    
+    assert response.status_code == 204
 
 def test_get_single_game():
+    clear_tables()
     #Create a game
     with db_session:
         hostPlayer = db.Player(nickName="IAmHost")
         flush()
         newGame = db.Game(name="game1", host=hostPlayer, isStarted=False)
+        flush()
         newGame.addPlayer(hostPlayer)
-
+        gamejson = {}
+        gamejson["name"] = newGame.name
+        gamejson["id"] = newGame.game_id
+        gamejson["players"] = int(newGame.playerCount)
+        gamejson["host"] = newGame.host.nickName
+        gamejson["password"] = False
     response = client.get("/game/availableGames")
 
     #Check response
     assert response.status_code == 200
-    assert response.json() == {'totalGames': 1, 'games': [{'name': 'game1', 'players': 1, 'host': 'IAmHost', 'password': False}]}
-    clear_tables()
+    assert response.json() == [gamejson]
+    
 
 def test_various_games():
+    clear_tables()
     with db_session:
         hosts = []
         for i in range(6):
@@ -79,20 +87,20 @@ def test_various_games():
         for i in range(6):
             gamejson = {}
             g = games[i]
-            gamejson['name'] = g.name
-            gamejson['players'] = int(g.playerCount)
-            gamejson['host'] = g.host.nickName
-            gamejson['password'] = False
+            gamejson["name"] = g.name
+            gamejson["id"] = g.game_id
+            gamejson["players"] = int(g.playerCount)
+            gamejson["host"] = g.host.nickName
+            gamejson["password"] = False
             gamesjson.append(gamejson)
         flush()
 
     response = client.get("/game/availableGames")
-    testjson = {"totalGames":6, "games":gamesjson}    
     assert response.status_code == 200
-    assert response.json() == testjson
-    clear_tables()
+    assert response.json() == gamesjson
 
 def test_full_games():
+    clear_tables()
     with db_session:
         hosts = []
         for i in range(6):
@@ -128,12 +136,11 @@ def test_full_games():
                 prev = n
         flush()
     response = client.get("/game/availableGames")
-    testjson = {"totalGames":0, "games":[]}    
     assert response.status_code == 204
-    assert response.json() == testjson
-    clear_tables()
+    
 
 def test_full_and_available():
+    clear_tables()
     with db_session:
         hosts = []
         for i in range(6):
@@ -172,14 +179,12 @@ def test_full_and_available():
         for i in range(4,6):
             gamejson = {}
             g = games[i]
-            gamejson['name'] = g.name
-            game['id'] = g.game_id
-            gamejson['players'] = int(g.playerCount)
-            gamejson['host'] = g.host.nickName
-            gamejson['password'] = False
+            gamejson["name"] = g.name
+            gamejson["id"] = g.game_id
+            gamejson["players"] = int(g.playerCount)
+            gamejson["host"] = g.host.nickName
+            gamejson["password"] = False
             gamesjson.append(gamejson)
     response = client.get("/game/availableGames")
-    testjson = {"totalGames":2, "games":gamesjson}    
     assert response.status_code == 200
-    assert response.json() == testjson
-    clear_tables()
+    assert response.json() == gamesjson
