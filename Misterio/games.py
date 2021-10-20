@@ -21,17 +21,16 @@ async def createNewGame(name: str = Body(...), host: str = Body(...)):
 async def getAvailableGames():
 	gamelist = []
 	with db_session:
-		games_query = select(g for g in db.Game if (g.playerCount < 6)).order_by(db.Game.game_id)
-		if not games_query.exists():
-			response.status_code = status.HTTP_204_NO_CONTENT	
-		gamelist = []
-		totalGames = len(games_query)
+		games_query = select(g for g in db.Game if (g.playerCount < 6)).order_by(db.Game.name)	
 		for g in games_query:
 			game = {}
-			game['name'] = g.name
-			game['id'] = g.game_id
-			game['players'] = int(g.playerCount)
-			game['host'] = g.host.nickName
-			game['password'] = False #We dont have passwords yet
+			game["name"] = g.name
+			game["id"] = g.game_id
+			game["players"] = int(g.playerCount)
+			game["host"] = g.host.nickName
+			game["password"] = False #We dont have passwords yet
 			gamelist.append(game)
-	return {'totalGames':totalGames, 'games':gamelist}
+	if not gamelist:
+		return Response(status_code=status.HTTP_204_NO_CONTENT)
+		
+	return gamelist
