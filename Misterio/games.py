@@ -18,7 +18,8 @@ async def createNewGame(name: str = Body(...), host: str = Body(...)):
 
 
 @game.get("/availableGames", status_code=status.HTTP_200_OK)
-async def getAvailableGames(response: Response):
+async def getAvailableGames():
+	gamelist = []
 	with db_session:
 		games_query = select(g for g in db.Game if (g.playerCount < 6)).order_by(db.Game.game_id)
 		if not games_query.exists():
