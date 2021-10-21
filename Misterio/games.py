@@ -8,17 +8,28 @@ import database as db
 from pony.orm import db_session, flush, select
 
 game = APIRouter(prefix="/game")
-class connections(TypedDict):
+logger = logging.getLogger("game")
+
+class userConnections(TypedDict):
 	websocket: WebSocket
 	userID: int
 
+class lobbyConnections(TypedDict):
+	lobbyID: int
+	websockets: List[WebSocket]
+
 class ConnectionManager:
 	def __init__(self):
-		self.active_connections: connections = {}
+		self.active_connections: userConnections = {}
+		self.active_lobbys: lobbyConnections = {}
 
 	async def connect(self, websocket: WebSocket, userID):
 		await websocket.accept()
 		self.active_connections[websocket] = userID
+		with db_session:
+			lobby = db.Player.get(player_id=userID).lobby
+			self.active_lobbys[lobby.game_id] = list()
+			self.active_lobbys[lobby.game_id].append(websocket)
 
 	def disconnect(self, websocket: WebSocket):
 		del self.active_connections[websocket]
