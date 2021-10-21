@@ -8,6 +8,7 @@ class Game(db.Entity):
     name = Required(str)
     host = Required('Player', reverse='hostOf')
     players = Set('Player', reverse='lobby')
+    currentPlayer = Optional('Player', reverse="currentPlayerOf")
     playerCount = Required(int, default=0)
     isStarted = Required(bool)
     
@@ -24,6 +25,7 @@ class Player(db.Entity):
     nickName = Required(str)
     hostOf = Optional(Game)
     lobby = Optional(Game)
+    currentPlayerOf = Optional(Game, reverse="currentPlayer")
     nextPlayer: Optional('Player', reverse="nextPlayer")
     currentDiceRoll: Optional(int)
 
