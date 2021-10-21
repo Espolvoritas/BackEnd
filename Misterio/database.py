@@ -35,7 +35,7 @@ class Player(db.Entity):
     hostOf = Optional(Game)
     lobby = Optional(Game)
     currentPlayerOf = Optional(Game, reverse="currentPlayer")
-    nextPlayer = Optional('Player', reverse="nextPlayer")
+    nextPlayer = Optional('Player', reverse="previousPlayer")
     previousPlayer = Optional('Player', reverse="nextPlayer")
     currentDiceRoll = Optional(int)
 
