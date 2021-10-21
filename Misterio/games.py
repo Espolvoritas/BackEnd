@@ -31,8 +31,9 @@ class ConnectionManager:
 			self.active_lobbys[lobby.game_id] = list()
 			self.active_lobbys[lobby.game_id].append(websocket)
 
-	def disconnect(self, websocket: WebSocket):
+	def disconnect(self, websocket: WebSocket, lobbyID: int):
 		del self.active_connections[websocket]
+		self.active_lobbys[lobbyID].remove(websocket)
 
 	async def send_personal_message(self, message: str, websocket: WebSocket):
 		await websocket.send_text(message)
@@ -102,6 +103,7 @@ async def getPlayers(websocket: WebSocket, userID: int):
 			except asyncio.TimeoutError:
 				pass
 	except WebSocketDisconnect:
+		manager.disconnect(websocket, lobby.game_id)
 		await manager.lobby_broadcast(manager.getPlayers(lobby.game_id), lobby.game_id)
 
 @game.post("/getPlayersPost", status_code=status.HTTP_200_OK)
