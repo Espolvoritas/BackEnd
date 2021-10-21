@@ -36,7 +36,7 @@ class ConnectionManager:
 		player_list = []
 		for connection in self.active_connections.keys():
 			player = db.Player.get(player_id=self.active_connections[connection])
-			if player is None and player.lobby is None:
+			if player is None or player.lobby is None:
 				manager.send_personal_message(status.HTTP_400_BAD_REQUEST,connection)
 				connection.close()
 			else:
