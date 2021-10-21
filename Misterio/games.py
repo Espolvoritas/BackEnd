@@ -89,7 +89,7 @@ async def getPlayers(websocket: WebSocket, userID: int):
 				pass
 	except WebSocketDisconnect:
 		manager.disconnect(websocket)
-		await manager.broadcast(getPlayers)
+		await manager.broadcast(manager.getPlayers())
 
 @game.post("/getPlayersPost", status_code=status.HTTP_200_OK)
 async def getPlayersPost(userID: int = Body(...)):
