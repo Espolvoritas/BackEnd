@@ -28,7 +28,8 @@ class ConnectionManager:
 		self.active_connections[websocket] = userID
 		with db_session:
 			lobby = db.Player.get(player_id=userID).lobby
-			self.active_lobbys[lobby.game_id] = list()
+			if lobby.game_id not in self.active_lobbys:
+				self.active_lobbys[lobby.game_id] = list()
 			self.active_lobbys[lobby.game_id].append(websocket)
 
 	def disconnect(self, websocket: WebSocket, lobbyID: int):
