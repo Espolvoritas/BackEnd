@@ -27,6 +27,7 @@ class Player(db.Entity):
     lobby = Optional(Game)
     currentPlayerOf = Optional(Game, reverse="currentPlayer")
     nextPlayer = Optional('Player', reverse="nextPlayer")
+    previousPlayer = Optional('Player', reverse="nextPlayer")
     currentDiceRoll = Optional(int)
 
     def setNext(self, nextPlayer):
