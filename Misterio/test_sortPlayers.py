@@ -1,7 +1,6 @@
-import unittest
 import database as db
-from pony.orm import Database, db_session
-from pony.orm import select, flush, commit
+from pony.orm import db_session
+from pony.orm import flush
 
 def clear_tables():
     db.db.drop_table(db.Player, if_exists=True, with_all_data=True)
