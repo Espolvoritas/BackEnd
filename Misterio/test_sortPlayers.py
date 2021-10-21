@@ -57,6 +57,3 @@ def test_playing_order():
         assert(len(distinctOrders)>0)
 
     clear_tables()
-
-if __name__ == '__main__':
-    test_playing_order()
