@@ -77,12 +77,9 @@ async def getAvailableGames():
 @game.websocket("/game/getPlayers/{userID}")
 async def getPlayers(websocket: WebSocket, userID: int):
 	await manager.connect(websocket, userID)
-	players = []
 	try:
+		await manager.broadcast(manager.getPlayers())
 		while True:
-			if players != manager.getPlayers():
-				players = manager.getPlayers()
-				await manager.broadcast(players)
 			try:
 				await asyncio.wait_for(websocket.receive_text(), 0.0001)
 			except asyncio.TimeoutError:
