@@ -42,6 +42,10 @@ class ConnectionManager:
 		for connection in self.active_connections.keys():
 			await connection.send_text(message)
 
+	async def lobby_broadcast(self, message: str, lobbyID: int):
+		for connection in self.active_lobbys[lobbyID]:
+			await connection.send_text(message)
+
 	@db_session
 	def getPlayers(self):
 		player_list = []
@@ -87,17 +91,18 @@ async def getAvailableGames():
 
 @game.websocket("/game/getPlayers/{userID}")
 async def getPlayers(websocket: WebSocket, userID: int):
+	with db_session:
+			lobby = db.Player.get(player_id=userID).lobby
 	await manager.connect(websocket, userID)
 	try:
-		await manager.broadcast(manager.getPlayers())
+		await manager.lobby_broadcast(manager.getPlayers(lobby.game_id), lobby.game_id)
 		while True:
 			try:
 				await asyncio.wait_for(websocket.receive_text(), 0.0001)
 			except asyncio.TimeoutError:
 				pass
 	except WebSocketDisconnect:
-		manager.disconnect(websocket)
-		await manager.broadcast(manager.getPlayers())
+		await manager.lobby_broadcast(manager.getPlayers(lobby.game_id), lobby.game_id)
 
 @game.post("/getPlayersPost", status_code=status.HTTP_200_OK)
 async def getPlayersPost(userID: int = Body(...)):
