@@ -32,10 +32,6 @@ class Player(db.Entity):
     def setNext(self, nextPlayer):
         self.nextPlayer = nextPlayer
 
-    def rollDice(self):
-        #Add function for dice roll
-        pass
-
 db.bind('sqlite', 'database.sqlite', create_db=True)  # Connect object `db` with database.
 db.generate_mapping(create_tables=True)  # Generate database
 
