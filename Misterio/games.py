@@ -47,14 +47,14 @@ class ConnectionManager:
 		for connection in self.active_lobbys[lobbyID]:
 			await connection.send_text(message)
 
-	@db_session
-	def getPlayers(self, lobbyID: int):
+	async def getPlayers(self, lobbyID: int):
 		player_list = []
 		for connection in self.active_lobbys[lobbyID]:
-			player = db.Player.get(player_id=self.active_connections[connection])
+			with db_session:
+				player = db.Player.get(player_id=self.active_connections[connection])
 			if player is None or player.lobby is None:
 				manager.send_personal_message(status.HTTP_400_BAD_REQUEST,connection)
-				connection.close()
+				await connection.close()
 			else:
 				player_list.append(player.nickName)
 		return player_list
@@ -96,7 +96,7 @@ async def getPlayers(websocket: WebSocket, userID: int):
 			lobby = db.Player.get(player_id=userID).lobby
 	await manager.connect(websocket, userID)
 	try:
-		await manager.lobby_broadcast(manager.getPlayers(lobby.game_id), lobby.game_id)
+		await manager.lobby_broadcast(await manager.getPlayers(lobby.game_id), lobby.game_id)
 		while True:
 			try:
 				await asyncio.wait_for(websocket.receive_text(), 0.0001)
@@ -104,7 +104,7 @@ async def getPlayers(websocket: WebSocket, userID: int):
 				pass
 	except WebSocketDisconnect:
 		manager.disconnect(websocket, lobby.game_id)
-		await manager.lobby_broadcast(manager.getPlayers(lobby.game_id), lobby.game_id)
+		await manager.lobby_broadcast(await manager.getPlayers(lobby.game_id), lobby.game_id)
 
 @game.post("/getPlayersPost", status_code=status.HTTP_200_OK)
 async def getPlayersPost(userID: int = Body(...)):
