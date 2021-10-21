@@ -1,6 +1,8 @@
 from pony.orm import Database, PrimaryKey, Optional, Set, Required
 from pony.orm import select
 
+from random import shuffle
+
 db = Database()
 
 class Game(db.Entity):
@@ -19,6 +21,13 @@ class Game(db.Entity):
         
     def getPlayers(self):
         return select(p for p in self.players)
+
+    def sortPlayers(self):
+        '''Assign each player who joined the game a `.nextPlayer` randomly.'''
+        shuffledPlayers = list([p for p in self.players])
+        shuffle(shuffledPlayers)
+        for index, player in enumerate(shuffledPlayers):
+            player.nextPlayer = shuffledPlayers[(index + 1) % len(shuffledPlayers)]
 
 class Player(db.Entity):
     player_id = PrimaryKey(int, auto=True) 
