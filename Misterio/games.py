@@ -53,8 +53,9 @@ class ConnectionManager:
 			with db_session:
 				player = db.Player.get(player_id=self.active_connections[connection])
 			if player is None or player.lobby is None:
-				manager.send_personal_message(status.HTTP_400_BAD_REQUEST,connection)
+				await manager.send_personal_message(status.HTTP_400_BAD_REQUEST,connection)
 				await connection.close()
+				return
 			else:
 				player_list.append(player.nickName)
 		return player_list
@@ -93,7 +94,12 @@ async def getAvailableGames():
 @game.websocket("/game/getPlayers/{userID}")
 async def getPlayers(websocket: WebSocket, userID: int):
 	with db_session:
-			lobby = db.Player.get(player_id=userID).lobby
+			player = db.Player.get(player_id=userID)
+			if player is None or player.lobby is None:
+				await manager.send_personal_message(status.HTTP_400_BAD_REQUEST,websocket)
+				await websocket.close()
+				return
+			lobby = player.lobby
 	await manager.connect(websocket, userID)
 	try:
 		await manager.lobby_broadcast(await manager.getPlayers(lobby.game_id), lobby.game_id)
