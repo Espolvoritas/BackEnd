@@ -96,7 +96,6 @@ async def getPlayers(websocket: WebSocket, userID: int):
 	with db_session:
 			player = db.Player.get(player_id=userID)
 			if player is None or player.lobby is None:
-				await manager.send_personal_message(status.HTTP_400_BAD_REQUEST,websocket)
 				await websocket.close()
 				return
 			lobby = player.lobby
