@@ -28,6 +28,7 @@ class Game(db.Entity):
         shuffle(shuffledPlayers)
         for index, player in enumerate(shuffledPlayers):
             player.nextPlayer = shuffledPlayers[(index + 1) % len(shuffledPlayers)]
+        self.currentPlayer = shuffledPlayers[0]
 
 class Player(db.Entity):
     player_id = PrimaryKey(int, auto=True) 
