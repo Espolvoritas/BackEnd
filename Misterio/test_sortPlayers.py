@@ -1,11 +1,13 @@
+import os
 import database as db
 from pony.orm import db_session
 from pony.orm import flush
 
+
 def clear_tables():
     db.db.drop_table(db.Player, if_exists=True, with_all_data=True)
     db.db.drop_table(db.Game, if_exists=True, with_all_data=True)
-    
+    os.system("rm database.sqlite")
     db.db.create_tables()
 
 def test_playing_order():
