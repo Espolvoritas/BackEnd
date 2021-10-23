@@ -23,11 +23,11 @@ class ConnectionManager:
 		self.active_connections: userConnections = {}
 		self.active_lobbys: lobbyConnections = {}
 
+	def exists(self, userID):
+		return userID in self.active_connections.values()
+
 	async def connect(self, websocket: WebSocket, userID):
 		await websocket.accept()
-		if userID in self.active_connections.values():
-			await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
-			raise WebSocketDisconnect
 		self.active_connections[websocket] = userID
 		with db_session:
 			lobby = db.Player.get(player_id=userID).lobby
@@ -100,7 +100,7 @@ async def getAvailableGames():
 async def getPlayers(websocket: WebSocket, userID: int):
 	with db_session:
 			player = db.Player.get(player_id=userID)
-			if player is None or player.lobby is None:
+			if player is None or player.lobby is None or manager.exists(userID):
 				await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
 				return
 			lobby = player.lobby
