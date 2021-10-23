@@ -35,10 +35,18 @@ class ConnectionManager:
 				self.active_lobbys[lobby.game_id] = list()
 			self.active_lobbys[lobby.game_id].append(websocket)
 
-	def disconnect(self, websocket: WebSocket, lobbyID: int):
+	def host_disconnect(self, websocket: WebSocket, lobbyID: int):
 		if websocket in self.active_connections.keys():
 			del self.active_connections[websocket]
 			self.active_lobbys[lobbyID].remove(websocket)
+
+	def disconnect(self, websocket: WebSocket, lobbyID: int):
+		if websocket in self.active_connections.keys():
+			userID = self.active_connections[websocket]
+			del self.active_connections[websocket]
+			self.active_lobbys[lobbyID].remove(websocket)
+			with db_session:
+				db.Player.get(player_id=userID).delete()
 
 	async def send_personal_message(self, message: List[str], websocket: WebSocket):
 		await websocket.send_json(message)
@@ -104,6 +112,7 @@ async def getPlayers(websocket: WebSocket, userID: int):
 				await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
 				return
 			lobby = player.lobby
+			isHost = player.hostOf == lobby
 	try:
 		await manager.connect(websocket, userID)
 		await manager.lobby_broadcast(await manager.getPlayers(lobby.game_id), lobby.game_id)
@@ -113,8 +122,11 @@ async def getPlayers(websocket: WebSocket, userID: int):
 			except asyncio.TimeoutError:
 				pass
 	except WebSocketDisconnect:
-		manager.disconnect(websocket, lobby.game_id)
-		await manager.lobby_broadcast(await manager.getPlayers(lobby.game_id), lobby.game_id)
+		if isHost:
+			manager.host_disconnect(websocket, lobby.game_id)
+		else:
+			manager.disconnect(websocket, lobby.game_id)
+			await manager.lobby_broadcast(await manager.getPlayers(lobby.game_id), lobby.game_id)
 
 @game.post("/getPlayersPost", status_code=status.HTTP_200_OK)
 async def getPlayersPost(userID: int = Body(...)):
