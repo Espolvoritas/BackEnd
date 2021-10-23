@@ -6,6 +6,7 @@ from starlette.responses import Response
 
 import database as db
 from pony.orm import db_session, flush, select
+from pydantic import BaseModel
 
 game = APIRouter(prefix="/game")
 logger = logging.getLogger("game")
@@ -145,3 +146,41 @@ async def startGame(userID: int = Body(...)):
 			lobby.sortPlayers()
 			await manager.lobby_broadcast("STATUS_GAME_STARTED", lobby.game_id)
 	return {}
+class JoinGameData(BaseModel):
+    gameId : int
+    playerNickname : str
+
+class JoinGameResponse(BaseModel):
+    nicknameIsValid : bool
+    gameIdIsValid: bool
+    playerId: int
+
+@game.post("/joinCheck")
+def joinGame(joinRequest: JoinGameData):
+    
+    with db_session:
+        
+        chosenGame = db.Game.get(game_id=joinRequest.gameId)
+        
+        if chosenGame is None:
+            return JoinGameResponse(nicknameIsValid=False, playerId=-1, gameIdIsValid=False)
+        
+        existingNicknames = set([player.nickName for player in select(p for p in chosenGame.players)])
+        nicknameIsTaken = joinRequest.playerNickname in existingNicknames
+        
+        if nicknameIsTaken:
+            return JoinGameResponse(nicknameIsValid=False, playerId=-1, gameIdIsValid=True)
+        
+        if chosenGame is not None and not nicknameIsTaken:
+            
+            newPlayer = db.Player(nickName=str(joinRequest.playerNickname))
+            
+            flush() # flush so the newPlayer is committed to the database
+            
+            chosenGame.addPlayer(newPlayer)
+            newPlayerId = newPlayer.player_id
+
+            return JoinGameResponse(nicknameIsValid=True, playerId=newPlayerId, gameIdIsValid=True)
+
+        else:
+            raise HTTPException(status_code=400, detail="Unexpected code reached")
