@@ -2,7 +2,6 @@ from fastapi import APIRouter, status, WebSocket, WebSocketDisconnect
 import database as db
 from pony.orm import db_session
 from games import ConnectionManager
-
 gameBoard = APIRouter(prefix="/gameBoard")
 
 gameBoard_manager = ConnectionManager()
@@ -36,8 +35,6 @@ async def rollDice(websocket: WebSocket, userID: int):
 				with db_session:
 					player = db.Player.get(player_id=userID)
 					player.currentDiceRoll = int(roll)
-				playerInTurn = False
 	except WebSocketDisconnect:
 		gameBoard_manager.disconnect(websocket, lobby.game_id)
 		await gameBoard_manager.lobby_broadcast(await gameBoard_manager.getPlayers(lobby.game_id), lobby.game_id)
-				
