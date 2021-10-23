@@ -2,9 +2,6 @@ from fastapi import APIRouter, status, WebSocket, WebSocketDisconnect
 import database as db
 from pony.orm import db_session
 from games import ConnectionManager
-import logging
-import asyncio
-from time import sleep
 
 gameBoard = APIRouter(prefix="/gameBoard")
 
@@ -42,11 +39,5 @@ async def rollDice(websocket: WebSocket, userID: int):
 				playerInTurn = False
 	except WebSocketDisconnect:
 		gameBoard_manager.disconnect(websocket, lobby.game_id)
-			print("Exception handled")
 		await gameBoard_manager.lobby_broadcast(await gameBoard_manager.getPlayers(lobby.game_id), lobby.game_id)
-		try:
-			await asyncio.wait_for(websocket.receive_text(), 0.0001)
-		except asyncio.TimeoutError:
-			pass
-
 				
