@@ -53,9 +53,9 @@ class ConnectionManager:
 		for connection in self.active_lobbys[lobbyID]:
 			with db_session:
 				player = db.Player.get(player_id=self.active_connections[connection])
+			#If we've gotten this far this should never happen, but still
 			if player is None or player.lobby is None:
-				await manager.send_personal_message(status.HTTP_400_BAD_REQUEST,connection)
-				await connection.close()
+				await connection.close(code=status.WS_1008_POLICY_VIOLATION)
 				return
 			else:
 				player_list.append(player.nickName)
@@ -97,7 +97,7 @@ async def getPlayers(websocket: WebSocket, userID: int):
 	with db_session:
 			player = db.Player.get(player_id=userID)
 			if player is None or player.lobby is None:
-				await websocket.close()
+				await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
 				return
 			lobby = player.lobby
 	await manager.connect(websocket, userID)
