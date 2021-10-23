@@ -163,7 +163,7 @@ def joinGame(gameId: int = Body(...), playerNickname: str = Body(...)):
         chosenGame = db.Game.get(game_id=gameId)
         
         if chosenGame is None:
-            return { "nicknameIsValid": True, "playerId": newPlayerId, "gameIdIsValid": True }
+            return { "nicknameIsValid": False, "playerId": -1, "gameIdIsValid": False }
         
         existingNicknames = set([player.nickName for player in select(p for p in chosenGame.players)])
         nicknameIsTaken = playerNickname in existingNicknames
