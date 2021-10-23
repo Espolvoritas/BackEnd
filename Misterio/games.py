@@ -36,41 +36,32 @@ async def getAvailableGames():
 		
 	return gamelist
 
-class JoinGameData(BaseModel):
-    gameId : int
-    playerNickname : str
-
-class JoinGameResponse(BaseModel):
-    nicknameIsValid : bool
-    gameIdIsValid: bool
-    playerId: int
-
 @game.post("/joinCheck")
-def joinGame(joinRequest: JoinGameData):
+def joinGame(gameId: int = Body(...), playerNickname: str = Body(...)):
     
     with db_session:
         
-        chosenGame = db.Game.get(game_id=joinRequest.gameId)
+        chosenGame = db.Game.get(game_id=gameId)
         
         if chosenGame is None:
-            return JoinGameResponse(nicknameIsValid=False, playerId=-1, gameIdIsValid=False)
+            return { "nicknameIsValid": True, "playerId": newPlayerId, "gameIdIsValid": True }
         
         existingNicknames = set([player.nickName for player in select(p for p in chosenGame.players)])
-        nicknameIsTaken = joinRequest.playerNickname in existingNicknames
+        nicknameIsTaken = playerNickname in existingNicknames
         
         if nicknameIsTaken:
-            return JoinGameResponse(nicknameIsValid=False, playerId=-1, gameIdIsValid=True)
+            return { "nicknameIsValid": False, "playerId": -1, "gameIdIsValid": True }
         
         if chosenGame is not None and not nicknameIsTaken:
             
-            newPlayer = db.Player(nickName=str(joinRequest.playerNickname))
+            newPlayer = db.Player(nickName=str(playerNickname))
             
             flush() # flush so the newPlayer is committed to the database
             
             chosenGame.addPlayer(newPlayer)
             newPlayerId = newPlayer.player_id
 
-            return JoinGameResponse(nicknameIsValid=True, playerId=newPlayerId, gameIdIsValid=True)
+            return { "nicknameIsValid": True, "playerId": newPlayerId, "gameIdIsValid": True }
 
         else:
             raise HTTPException(status_code=400, detail="Unexpected code reached")
