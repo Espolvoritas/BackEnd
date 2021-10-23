@@ -37,8 +37,12 @@ class ConnectionManager:
 
 	def host_disconnect(self, websocket: WebSocket, lobbyID: int):
 		if websocket in self.active_connections.keys():
+			userID = self.active_connections[websocket]
 			del self.active_connections[websocket]
 			self.active_lobbys[lobbyID].remove(websocket)
+			with db_session():
+				db.Game.get(game_id=lobbyID).delete()
+				db.Player.get(player_id=userID).delete()
 
 	def disconnect(self, websocket: WebSocket, lobbyID: int):
 		if websocket in self.active_connections.keys():
