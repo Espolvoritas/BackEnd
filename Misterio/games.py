@@ -40,13 +40,13 @@ class ConnectionManager:
 		await websocket.send_text(message)
 
 
-	async def broadcast(self, message: str):
+	async def broadcast(self, message: List[str]):
 		for connection in self.active_connections.keys():
-			await connection.send_text(message)
+			await connection.send_json(message)
 
-	async def lobby_broadcast(self, message: str, lobbyID: int):
+	async def lobby_broadcast(self, message: List[str], lobbyID: int):
 		for connection in self.active_lobbys[lobbyID]:
-			await connection.send_text(message)
+			await connection.send_json(message)
 
 	async def getPlayers(self, lobbyID: int):
 		player_list = []

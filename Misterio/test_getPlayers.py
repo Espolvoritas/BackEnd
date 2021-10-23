@@ -53,8 +53,8 @@ def test_no_lobby():
 		player = db.Player(nickName=get_random_string(6))
 	with client.websocket_connect("/game/getPlayers/1") as websocket1:
 		try:
-			data = websocket1.receive()
-			for player in data['text']:
+			data = websocket1.receive_json()
+			for player in data:
 				assert player == host
 				with pytest.raises(WebSocketDisconnect, match='1008'):
 					with client.websocket_connect("/game/getPlayers/2"):
@@ -68,8 +68,8 @@ def test_invalid_player():
 	create_new_game(host)	
 	with client.websocket_connect("/game/getPlayers/1") as websocket1:
 		try:
-			data = websocket1.receive()
-			for player in data['text']:
+			data = websocket1.receive_json()
+			for player in data:
 				assert player == host
 				with pytest.raises(WebSocketDisconnect, match='1008'):
 					with client.websocket_connect("/game/getPlayers/2"):
@@ -86,11 +86,11 @@ def test_two_lobbys():
 	with client.websocket_connect("/game/getPlayers/1") as websocket1, \
 		client.websocket_connect("/game/getPlayers/2") as websocket2:
 		try:
-			data = websocket1.receive()
-			for player in data['text']:
+			data = websocket1.receive_json()
+			for player in data:
 				assert player == host1
-			data = websocket2.receive()
-			for player in data['text']:
+			data = websocket2.receive_json()
+			for player in data:
 				assert player == host2
 			websocket2.close()
 			websocket1.close()
@@ -107,15 +107,15 @@ def test_get_two_players():
 	with client.websocket_connect("/game/getPlayers/1") as websocket1, \
 		client.websocket_connect("/game/getPlayers/2") as websocket2:
 		try:
-			data = websocket1.receive()
-			for player, expected in zip(data['text'], expectedPlayers):
+			data = websocket1.receive_json()
+			for player, expected in zip(data, expectedPlayers):
 				assert player == expected
-			data = websocket2.receive()
-			for player, expected in zip(data['text'], expectedPlayers):
+			data = websocket2.receive_json()
+			for player, expected in zip(data, expectedPlayers):
 				assert player == expected
 			websocket2.close()
-			data = websocket1.receive()
-			for player, expected in zip(data['text'], expectedPlayers):
+			data = websocket1.receive_json()
+			for player, expected in zip(data, expectedPlayers):
 				assert player == expected
 			websocket1.close()
 		except KeyboardInterrupt:
