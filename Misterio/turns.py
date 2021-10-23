@@ -24,16 +24,9 @@ async def startGame(websocket: WebSocket, gameID: int):
 			game.isStarted = True
 			game.sortPlayers()
 
-logger = logging.getLogger("gameBoard")
-
-def update_roll(userID, diceRoll):
-	print("UPDATED ROLL")
-	with db_session:
-		player = db.Player.get(player_id=userID)
-		player.currentDiceRoll = int(diceRoll)
-	
-
-def check_in_turn(userID):
+@gameBoard.websocket("/gameBoard/{userID}/rollDice")
+async def rollDice(websocket: WebSocket, userID: int):
+	await gameBoard_manager.connect(websocket, userID)
 	with db_session:
 		player = db.Player.get(player_id=userID)
 		lobby = player.lobby
