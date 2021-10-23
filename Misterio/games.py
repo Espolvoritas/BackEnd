@@ -25,6 +25,9 @@ class ConnectionManager:
 
 	async def connect(self, websocket: WebSocket, userID):
 		await websocket.accept()
+		if userID in self.active_connections.values():
+			websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+			return
 		self.active_connections[websocket] = userID
 		with db_session:
 			lobby = db.Player.get(player_id=userID).lobby
