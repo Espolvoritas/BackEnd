@@ -26,8 +26,8 @@ class ConnectionManager:
 	async def connect(self, websocket: WebSocket, userID):
 		await websocket.accept()
 		if userID in self.active_connections.values():
-			websocket.close(code=status.WS_1008_POLICY_VIOLATION)
-			return
+			await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+			raise WebSocketDisconnect
 		self.active_connections[websocket] = userID
 		with db_session:
 			lobby = db.Player.get(player_id=userID).lobby
@@ -103,8 +103,8 @@ async def getPlayers(websocket: WebSocket, userID: int):
 				await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
 				return
 			lobby = player.lobby
-	await manager.connect(websocket, userID)
 	try:
+		await manager.connect(websocket, userID)
 		await manager.lobby_broadcast(await manager.getPlayers(lobby.game_id), lobby.game_id)
 		while True:
 			try:
