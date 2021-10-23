@@ -36,8 +36,9 @@ class ConnectionManager:
 			self.active_lobbys[lobby.game_id].append(websocket)
 
 	def disconnect(self, websocket: WebSocket, lobbyID: int):
-		del self.active_connections[websocket]
-		self.active_lobbys[lobbyID].remove(websocket)
+		if websocket in self.active_connections.keys():
+			del self.active_connections[websocket]
+			self.active_lobbys[lobbyID].remove(websocket)
 
 	async def send_personal_message(self, message: str, websocket: WebSocket):
 		await websocket.send_text(message)
