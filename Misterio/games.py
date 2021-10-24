@@ -35,12 +35,19 @@ class ConnectionManager:
 				self.active_lobbys[lobby.game_id] = list()
 			self.active_lobbys[lobby.game_id].append(websocket)
 
-	def host_disconnect(self, websocket: WebSocket, lobbyID: int):
+	async def disconnect_everyone(self, websocket: WebSocket,lobbyID: int):
+		for connection in self.active_lobbys[lobbyID]:
+			if connection != websocket:
+				await connection.close(code=status.WS_1001_GOING_AWAY)
+				manager.disconnect(connection, lobbyID)
+
+	async def host_disconnect(self, websocket: WebSocket, lobbyID: int):
 		if websocket in self.active_connections.keys():
 			userID = self.active_connections[websocket]
 			del self.active_connections[websocket]
 			self.active_lobbys[lobbyID].remove(websocket)
-			with db_session():
+			del self.active_lobbys[lobbyID]
+			with db_session(optimistic=False):
 				db.Game.get(game_id=lobbyID).delete()
 				db.Player.get(player_id=userID).delete()
 
@@ -49,7 +56,7 @@ class ConnectionManager:
 			userID = self.active_connections[websocket]
 			del self.active_connections[websocket]
 			self.active_lobbys[lobbyID].remove(websocket)
-			with db_session:
+			with db_session(optimistic=False):
 				db.Player.get(player_id=userID).delete()
 
 	async def send_personal_message(self, message: List[str], websocket: WebSocket):
@@ -127,7 +134,8 @@ async def getPlayers(websocket: WebSocket, userID: int):
 				pass
 	except WebSocketDisconnect:
 		if isHost:
-			manager.host_disconnect(websocket, lobby.game_id)
+			await manager.disconnect_everyone(websocket, lobby.game_id)
+			await manager.host_disconnect(websocket, lobby.game_id)
 		else:
 			manager.disconnect(websocket, lobby.game_id)
 			await manager.lobby_broadcast(await manager.getPlayers(lobby.game_id), lobby.game_id)
