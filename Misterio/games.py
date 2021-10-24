@@ -143,5 +143,5 @@ async def startGame(userID: int = Body(...)):
 		else:
 			lobby.isStarted = True
 			lobby.sortPlayers()
-			#manager.lobby_broadcast("Game is about to start!", lobby.game_id)
+			await manager.lobby_broadcast("Game is about to start!", lobby.game_id)
 	return {}
