@@ -131,7 +131,7 @@ async def getPlayers(websocket: WebSocket, userID: int):
 		await manager.lobby_broadcast(await manager.getPlayers(lobby.game_id), lobby.game_id)
 		while True:
 			try:
-				await asyncio.wait_for(websocket.receive_text(), 0.0001)
+				await asyncio.wait_for(await websocket.receive_text(), 0.0001)
 			except asyncio.TimeoutError:
 				pass
 	except WebSocketDisconnect:
