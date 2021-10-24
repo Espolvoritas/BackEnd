@@ -130,7 +130,7 @@ async def getPlayersPost(userID: int = Body(...)):
 		return player_list
 
 @game.post("/startGame", status_code=status.HTTP_200_OK)
-async def startGame(userID: int = Body(...), gameID: int = Body(...)):
+async def startGame(userID: int = Body(...)):
 	with db_session:
 		host = db.Player.get(player_id=userID)
 		lobby = host.lobby
