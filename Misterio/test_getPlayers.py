@@ -114,6 +114,29 @@ def test_duplicate():
 		except KeyboardInterrupt:
 			websocket1.close()
 
+def test_leave_host():
+	clear_tables()
+	host = get_random_string(6)
+	game_id = create_new_game(host).json()['game_id']
+	expectedPlayers = create_players(1,game_id)
+	expectedPlayers.insert(0,host)
+	with client.websocket_connect("/game/getPlayers/1") as websocket1, \
+		pytest.raises(WebSocketDisconnect, match='1001'):
+		with client.websocket_connect("/game/getPlayers/2") as websocket2:
+			try:
+				data = websocket1.receive_json()
+				for player, expected in zip(data, expectedPlayers):
+					assert player == expected
+				data = websocket2.receive_json()
+				for player, expected in zip(data, expectedPlayers):
+					assert player == expected
+				websocket1.close()
+				data = websocket2.receive_json()
+				websocket2.close()
+			except KeyboardInterrupt:
+				websocket2.close()
+				websocket1.close()
+
 def test_get_two_players():
 	clear_tables()
 	host = get_random_string(6)
