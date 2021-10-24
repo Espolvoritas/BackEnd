@@ -68,20 +68,22 @@ class ConnectionManager:
 			await connection.send_json(message)
 
 	async def lobby_broadcast(self, message: List[str], lobbyID: int):
-		for connection in self.active_lobbys[lobbyID]:
-			await connection.send_json(message)
+		if lobbyID in self.active_lobbys.keys():
+			for connection in self.active_lobbys[lobbyID]:
+				await connection.send_json(message)
 
 	async def getPlayers(self, lobbyID: int):
 		player_list = []
-		for connection in self.active_lobbys[lobbyID]:
-			with db_session:
-				player = db.Player.get(player_id=self.active_connections[connection])
-			#If we've gotten this far this should never happen, but still
-			if player is None or player.lobby is None:
-				await connection.close(code=status.WS_1008_POLICY_VIOLATION)
-				return
-			else:
-				player_list.append(player.nickName)
+		if lobbyID in self.active_lobbys.keys():
+			for connection in self.active_lobbys[lobbyID]:
+				with db_session:
+					player = db.Player.get(player_id=self.active_connections[connection])
+				#If we've gotten this far this should never happen, but still
+				if player is None or player.lobby is None:
+					await connection.close(code=status.WS_1008_POLICY_VIOLATION)
+					return
+				else:
+					player_list.append(player.nickName)
 		return player_list
 		
 manager = ConnectionManager()
