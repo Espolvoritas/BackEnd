@@ -46,7 +46,6 @@ class ConnectionManager:
 			userID = self.active_connections[websocket]
 			del self.active_connections[websocket]
 			self.active_lobbys[lobbyID].remove(websocket)
-			del self.active_lobbys[lobbyID]
 			with db_session(optimistic=False):
 				if not db.Game.get(game_id=lobbyID).isStarted:
 					db.Game.get(game_id=lobbyID).delete()
