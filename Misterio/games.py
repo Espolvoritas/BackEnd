@@ -63,6 +63,7 @@ class ConnectionManager:
 				if game is not None:
 					if not game.isStarted:
 						db.Player.get(player_id=userID).delete()
+						game.playerCount -= 1
 
 	async def send_personal_message(self, message: List[str], websocket: WebSocket):
 		await websocket.send_json(message)
