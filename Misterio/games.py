@@ -74,7 +74,6 @@ class ConnectionManager:
 			await connection.send_json(message)
 
 	async def lobby_broadcast(self, message: List[str], lobbyID: int):
-		await asyncio.sleep(0.1)
 		if lobbyID in self.active_lobbys.keys():
 			for connection in self.active_lobbys[lobbyID]:
 				await connection.send_json(message)
@@ -147,6 +146,7 @@ async def getPlayers(websocket: WebSocket, userID: int):
 			await manager.host_disconnect(websocket, lobby.game_id)
 		else:
 			manager.disconnect(websocket, lobby.game_id)
+			await asyncio.sleep(0.1)
 			await manager.lobby_broadcast(await manager.getPlayers(lobby.game_id), lobby.game_id)
 
 @game.post("/getPlayersPost", status_code=status.HTTP_200_OK)
