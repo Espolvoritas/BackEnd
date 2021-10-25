@@ -48,8 +48,9 @@ class ConnectionManager:
 			self.active_lobbys[lobbyID].remove(websocket)
 			del self.active_lobbys[lobbyID]
 			with db_session(optimistic=False):
-				db.Game.get(game_id=lobbyID).delete()
-				db.Player.get(player_id=userID).delete()
+				if not db.Game.get(game_id=lobbyID).isStarted:
+					db.Game.get(game_id=lobbyID).delete()
+					db.Player.get(player_id=userID).delete()
 
 	def disconnect(self, websocket: WebSocket, lobbyID: int):
 		if websocket in self.active_connections.keys():
@@ -57,7 +58,8 @@ class ConnectionManager:
 			del self.active_connections[websocket]
 			self.active_lobbys[lobbyID].remove(websocket)
 			with db_session(optimistic=False):
-				db.Player.get(player_id=userID).delete()
+				if not db.Game.get(game_id=lobbyID).isStarted:
+					db.Player.get(player_id=userID).delete()
 
 	async def send_personal_message(self, message: List[str], websocket: WebSocket):
 		await websocket.send_json(message)
