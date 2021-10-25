@@ -11,6 +11,15 @@ from pydantic import BaseModel
 game = APIRouter(prefix="/game")
 logger = logging.getLogger("game")
 
+class JoinGameData(BaseModel):
+    gameId : int
+    playerNickname : str
+
+class JoinGameResponse(BaseModel):
+    nicknameIsValid : bool
+    gameIdIsValid: bool
+    playerId: int
+
 class userConnections(TypedDict):
 	websocket: WebSocket
 	userID: int
@@ -146,17 +155,8 @@ async def startGame(userID: int = Body(...)):
 			lobby.sortPlayers()
 			await manager.lobby_broadcast("STATUS_GAME_STARTED", lobby.game_id)
 	return {}
-class JoinGameData(BaseModel):
-    gameId : int
-    playerNickname : str
 
-class JoinGameResponse(BaseModel):
-    nicknameIsValid : bool
-    gameIdIsValid: bool
-    playerId: int
-
-@game.post("/joinCheck")
-@game.post("/joinCheck")
+@game.post("/joinCheck", status_code=status.HTTP_200_OK)
 async def joinGame(gameId: int = Body(...), playerNickname: str = Body(...)):
 
     with db_session:
