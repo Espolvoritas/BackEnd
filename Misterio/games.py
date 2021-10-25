@@ -6,7 +6,6 @@ from starlette.responses import Response
 
 import database as db
 from pony.orm import db_session, flush, select
-from pydantic import BaseModel
 
 game = APIRouter(prefix="/game")
 logger = logging.getLogger("game")
