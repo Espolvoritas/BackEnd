@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pony.orm.core import select
 from games import game
+from turns import gameBoard
 
 app = FastAPI()
 
@@ -18,6 +19,7 @@ app.add_middleware(
 )
 
 app.include_router(game)
+app.include_router(gameBoard)
 
 @app.get("/")
 async def get():
