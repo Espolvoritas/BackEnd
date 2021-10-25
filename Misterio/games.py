@@ -40,8 +40,8 @@ class ConnectionManager:
 			del self.active_connections[websocket]
 			self.active_lobbys[lobbyID].remove(websocket)
 
-	async def send_personal_message(self, message: str, websocket: WebSocket):
-		await websocket.send_text(message)
+	async def send_personal_message(self, message: List[str], websocket: WebSocket):
+		await websocket.send_json(message)
 
 
 	async def broadcast(self, message: List[str]):

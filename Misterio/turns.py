@@ -25,6 +25,7 @@ async def rollDice(websocket: WebSocket, userID: int):
 	with db_session:
 		player = db.Player.get(player_id=userID)
 		lobby = player.lobby
+		await gameBoard_manager.send_personal_message(lobby.currentPlayer.nickName, websocket)
 	try:
 		while(True):
 			roll = await websocket.receive_text()

@@ -88,9 +88,12 @@ def test_send_one_roll():
 	roll = random.randint(1,6)
 	with db_session:
 		current_player = db.Game.get(game_id=1).currentPlayer.player_id
+		current_player_nickName = db.Game.get(game_id=1).currentPlayer.nickName
 		next_player = db.Game.get(game_id=1).currentPlayer.nextPlayer.nickName
 	with client.websocket_connect("/gameBoard/" + str(current_player) +"/rollDice") as websocket1:
 		try:
+			data = websocket1.receive_json()
+			assert current_player_nickName == data
 			websocket1.send_text(roll)
 			data = websocket1.receive_json()
 			assert next_player == data
