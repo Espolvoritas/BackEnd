@@ -1,6 +1,8 @@
 from pony.orm import Database, PrimaryKey, Optional, Set, Required
 from pony.orm import select
 
+from random import shuffle
+
 db = Database()
 
 class Game(db.Entity):
@@ -8,6 +10,7 @@ class Game(db.Entity):
     name = Required(str)
     host = Required('Player', reverse='hostOf')
     players = Set('Player', reverse='lobby')
+    currentPlayer = Optional('Player', reverse="currentPlayerOf")
     playerCount = Required(int, default=0)
     isStarted = Required(bool)
     
@@ -19,20 +22,26 @@ class Game(db.Entity):
     def getPlayers(self):
         return select(p for p in self.players)
 
+    def sortPlayers(self):
+        '''Assign each player who joined the game a `.nextPlayer` randomly.'''
+        shuffledPlayers = list([p for p in self.players])
+        shuffle(shuffledPlayers)
+        for index, player in enumerate(shuffledPlayers):
+            player.nextPlayer = shuffledPlayers[(index + 1) % len(shuffledPlayers)]
+        self.currentPlayer = shuffledPlayers[0]
+
 class Player(db.Entity):
     player_id = PrimaryKey(int, auto=True) 
     nickName = Required(str)
     hostOf = Optional(Game)
     lobby = Optional(Game)
-    nextPlayer: Optional('Player', reverse="nextPlayer")
-    currentDiceRoll: Optional(int)
+    currentPlayerOf = Optional(Game, reverse="currentPlayer")
+    nextPlayer = Optional('Player', reverse="previousPlayer")
+    previousPlayer = Optional('Player', reverse="nextPlayer")
+    currentDiceRoll = Optional(int)
 
     def setNext(self, nextPlayer):
         self.nextPlayer = nextPlayer
-
-    def rollDice(self):
-        #Add function for dice roll
-        pass
 
 db.bind('sqlite', 'database.sqlite', create_db=True)  # Connect object `db` with database.
 db.generate_mapping(create_tables=True)  # Generate database
