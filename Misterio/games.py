@@ -40,7 +40,6 @@ class ConnectionManager:
 		for connection in connections:
 			if connection != websocket:
 				await connection.close(code=status.WS_1001_GOING_AWAY)
-				manager.disconnect(connection, lobbyID)
 
 	async def host_disconnect(self, websocket: WebSocket, lobbyID: int):
 		if websocket in self.active_connections.keys():
