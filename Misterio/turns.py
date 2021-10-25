@@ -11,7 +11,7 @@ def get_next_turn(lobbyID: int):
 	lobby = db.Game.get(game_id=lobbyID)
 	currentPlayer = lobby.currentPlayer
 	lobby.currentPlayer = currentPlayer.nextPlayer
-	return lobby.currentPlayer.player_id
+	return lobby.currentPlayer.nickName
 
 @db_session
 def player_in_turn(userID: int):
