@@ -73,6 +73,7 @@ class ConnectionManager:
 			await connection.send_json(message)
 
 	async def lobby_broadcast(self, message: List[str], lobbyID: int):
+		await asyncio.sleep(0.1)
 		if lobbyID in self.active_lobbys.keys():
 			for connection in self.active_lobbys[lobbyID]:
 				await connection.send_json(message)
