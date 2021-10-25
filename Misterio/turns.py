@@ -6,6 +6,12 @@ gameBoard = APIRouter(prefix="/gameBoard")
 
 gameBoard_manager = ConnectionManager()
 
+@db_session
+def get_next_turn(lobbyID: int):
+	lobby = db.Game.get(game_id=lobbyID)
+	currentPlayer = lobby.currentPlayer
+	lobby.currentPlayer = currentPlayer.nextPlayer
+	return lobby.currentPlayer.player_id
 @gameBoard.websocket("/gameBoard/{userID}/rollDice")
 async def rollDice(websocket: WebSocket, userID: int):
 	await gameBoard_manager.connect(websocket, userID)
