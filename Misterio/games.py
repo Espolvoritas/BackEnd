@@ -36,7 +36,8 @@ class ConnectionManager:
 			self.active_lobbys[lobby.game_id].append(websocket)
 
 	async def disconnect_everyone(self, websocket: WebSocket,lobbyID: int):
-		for connection in self.active_lobbys[lobbyID]:
+		connections = self.active_lobbys[lobbyID].copy()
+		for connection in connections:
 			if connection != websocket:
 				await connection.close(code=status.WS_1001_GOING_AWAY)
 				manager.disconnect(connection, lobbyID)
