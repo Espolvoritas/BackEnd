@@ -12,7 +12,6 @@ async def rollDice(websocket: WebSocket, userID: int):
 	with db_session:
 		player = db.Player.get(player_id=userID)
 		lobby = player.lobby
-		lobby.sortPlayers()
 		playerInTurn = userID == lobby.currentPlayer.player_id
 	try:
 		while(True):
