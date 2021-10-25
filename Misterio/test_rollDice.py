@@ -5,7 +5,7 @@ from time import sleep
 import database as db
 from pony.orm import db_session, flush, select
 import random # define the random module  
-
+import random
 client = TestClient(app)
 
 def clear_tables():
@@ -48,19 +48,95 @@ def create_player():
 	host = get_random_string(6)
 	game_id = create_new_game(host).json()['game_id']
 
-def test_get_two_players():
+def startGame(userID):
+	return client.post("/game/startGame",
+				headers={"accept": "application/json",
+				"Content-Type" : "application/json"},
+				json=f'{userID}'
+				)
+
+def test_send_one_roll():
+	clear_tables()
+	host = get_random_string(6)
+	game_id = create_new_game(host).json()['game_id']
+	expectedPlayers = create_players(1,game_id)
+	expectedPlayers.insert(0,host)
+	with client.websocket_connect("/game/getPlayers/1") as websocket1, \
+		client.websocket_connect("/game/getPlayers/2") as websocket2:
+		try:
+			data = websocket1.receive_json()
+			for player, expected in zip(data, expectedPlayers):
+				assert player == expected
+			data = websocket2.receive_json()
+			for player, expected in zip(data, expectedPlayers):
+				assert player == expected
+
+			response = startGame(1)
+			assert response.status_code == 200
+			websocket2.close()
+			data = websocket1.receive_json()
+			for player, expected in zip(data, expectedPlayers):
+				assert player == expected
+			websocket1.close()
+		except KeyboardInterrupt:
+			websocket2.close()
+			websocket1.close()
 	
-	#expectedPlayers = create_players(1,game_id)
-	#expectedPlayers.insert(0,host)
+	roll = random.randint(1,6)
 	with client.websocket_connect("/gameBoard/1/rollDice") as websocket1:
 		try:
-			websocket1.send_text(1)
-			sleep(5)
+			websocket1.send_text(roll)
+			sleep(1)
 			websocket1.close()
-			print("closed")
 		except KeyboardInterrupt:
 			websocket1.close()
-	
+	with db_session:
+		player = db.Player.get(player_id=1)
+		curr_roll = player.currentDiceRoll
+	assert curr_roll == roll
 
-#create_player()
-test_get_two_players()
+def test_send_one_roll_not_in_turn():
+	clear_tables()
+	host = get_random_string(6)
+	game_id = create_new_game(host).json()['game_id']
+	expectedPlayers = create_players(1,game_id)
+	expectedPlayers.insert(0,host)
+	with client.websocket_connect("/game/getPlayers/1") as websocket1, \
+		client.websocket_connect("/game/getPlayers/2") as websocket2:
+		try:
+			data = websocket1.receive_json()
+			for player, expected in zip(data, expectedPlayers):
+				assert player == expected
+			data = websocket2.receive_json()
+			for player, expected in zip(data, expectedPlayers):
+				assert player == expected
+
+			response = startGame(1)
+			assert response.status_code == 200
+			websocket2.close()
+			data = websocket1.receive_json()
+			for player, expected in zip(data, expectedPlayers):
+				assert player == expected
+			websocket1.close()
+		except KeyboardInterrupt:
+			websocket2.close()
+			websocket1.close()
+	
+	roll = random.randint(1,6)
+	with client.websocket_connect("/gameBoard/2/rollDice") as websocket1:
+		try:
+			websocket1.send_text(roll)
+			sleep(1)
+			websocket1.close()
+		except KeyboardInterrupt:
+			websocket1.close()
+	with db_session:
+		player = db.Player.get(player_id=2)
+		lobby = player.lobby
+		#if current player is player 2
+		if player.player_id == lobby.currentPlayer.player_id:
+				assert player.currentRoll == roll
+		else:
+			assert player.currentDiceRoll is None
+
+
