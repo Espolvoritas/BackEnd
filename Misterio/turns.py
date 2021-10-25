@@ -32,6 +32,7 @@ async def rollDice(websocket: WebSocket, userID: int):
 				with db_session:
 					player = db.Player.get(player_id=userID)
 					player.currentDiceRoll = int(roll)
+				await gameBoard_manager.lobby_broadcast(get_next_turn(lobby.game_id), lobby.game_id)
 	except WebSocketDisconnect:
 		gameBoard_manager.disconnect(websocket, lobby.game_id)
 		await gameBoard_manager.lobby_broadcast(await gameBoard_manager.getPlayers(lobby.game_id), lobby.game_id)
