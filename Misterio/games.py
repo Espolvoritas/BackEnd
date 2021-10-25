@@ -128,3 +128,20 @@ async def getPlayersPost(userID: int = Body(...)):
 		for player in players_query:
 			player_list.append(player.nickName)
 		return player_list
+
+@game.post("/startGame", status_code=status.HTTP_200_OK)
+async def startGame(userID: int = Body(...)):
+	with db_session:
+		host = db.Player.get(player_id=userID)
+		lobby = host.lobby
+		if lobby.host != host:
+			raise HTTPException(status_code=403, detail="Only host can start game")
+		if lobby is None:
+			raise HTTPException(status_code=400, detail="Lobby does not exist")
+		if lobby.playerCount < 2:
+			raise HTTPException(status_code=405, detail="Not enough players")
+		else:
+			lobby.isStarted = True
+			lobby.sortPlayers()
+			await manager.lobby_broadcast("STATUS_GAME_STARTED", lobby.game_id)
+	return {}
