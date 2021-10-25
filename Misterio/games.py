@@ -10,15 +10,6 @@ from pony.orm import db_session, flush, select
 game = APIRouter(prefix="/game")
 logger = logging.getLogger("game")
 
-class JoinGameData(BaseModel):
-    gameId : int
-    playerNickname : str
-
-class JoinGameResponse(BaseModel):
-    nicknameIsValid : bool
-    gameIdIsValid: bool
-    playerId: int
-
 class userConnections(TypedDict):
 	websocket: WebSocket
 	userID: int
