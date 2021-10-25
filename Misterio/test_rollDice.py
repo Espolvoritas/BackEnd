@@ -3,10 +3,13 @@ from fastapi.testclient import TestClient
 import string
 from time import sleep
 import database as db
+import logging
 from pony.orm import db_session, flush, select
 import random # define the random module  
 import random
 client = TestClient(app)
+logger = logging.getLogger("gameboard")
+
 
 def clear_tables():
     db.db.drop_table(db.Player, if_exists=True, with_all_data=True)
@@ -83,15 +86,19 @@ def test_send_one_roll():
 			websocket1.close()
 	
 	roll = random.randint(1,6)
-	with client.websocket_connect("/gameBoard/1/rollDice") as websocket1:
+	with db_session:
+		current_player = db.Game.get(game_id=1).currentPlayer.player_id
+		next_player = db.Game.get(game_id=1).currentPlayer.nextPlayer.nickName
+	with client.websocket_connect("/gameBoard/" + str(current_player) +"/rollDice") as websocket1:
 		try:
 			websocket1.send_text(roll)
-			sleep(1)
+			data = websocket1.receive_json()
+			assert next_player == data
 			websocket1.close()
 		except KeyboardInterrupt:
 			websocket1.close()
 	with db_session:
-		player = db.Player.get(player_id=1)
+		player = db.Player.get(player_id=current_player)
 		curr_roll = player.currentDiceRoll
 	assert curr_roll == roll
 
@@ -123,20 +130,15 @@ def test_send_one_roll_not_in_turn():
 			websocket1.close()
 	
 	roll = random.randint(1,6)
-	with client.websocket_connect("/gameBoard/2/rollDice") as websocket1:
+	with db_session:
+		wrong_player = db.Game.get(game_id=1).currentPlayer.nextPlayer.player_id
+	with client.websocket_connect("/gameBoard/" + str(wrong_player) +"/rollDice") as websocket1:
 		try:
 			websocket1.send_text(roll)
-			sleep(1)
 			websocket1.close()
 		except KeyboardInterrupt:
 			websocket1.close()
 	with db_session:
-		player = db.Player.get(player_id=2)
-		lobby = player.lobby
+		player = db.Player.get(player_id=wrong_player)
 		#if current player is player 2
-		if player.player_id == lobby.currentPlayer.player_id:
-				assert player.currentRoll == roll
-		else:
-			assert player.currentDiceRoll is None
-
-
+		assert player.currentDiceRoll is None
