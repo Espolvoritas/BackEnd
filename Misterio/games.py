@@ -109,7 +109,7 @@ async def createNewGame(name: str = Body(...), host: str = Body(...)):
 async def getAvailableGames():
     gamelist = []
     with db_session:
-        games_query = select(g for g in db.Game if (g.playerCount < 6)).order_by(db.Game.name)    
+        games_query = select(g for g in db.Game if ((g.playerCount < 6)and not (g.isStarted))).order_by(db.Game.name)    
         for g in games_query:
             game = {}
             game["name"] = g.name
