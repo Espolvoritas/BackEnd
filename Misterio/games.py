@@ -23,11 +23,11 @@ class ConnectionManager:
 		self.active_connections: userConnections = {}
 		self.active_lobbys: lobbyConnections = {}
 
+	def exists(self, userID):
+		return userID in self.active_connections.values()
+
 	async def connect(self, websocket: WebSocket, userID):
 		await websocket.accept()
-		if userID in self.active_connections.values():
-			await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
-			raise WebSocketDisconnect
 		self.active_connections[websocket] = userID
 		with db_session:
 			lobby = db.Player.get(player_id=userID).lobby
@@ -35,10 +35,35 @@ class ConnectionManager:
 				self.active_lobbys[lobby.game_id] = list()
 			self.active_lobbys[lobby.game_id].append(websocket)
 
-	def disconnect(self, websocket: WebSocket, lobbyID: int):
+	async def disconnect_everyone(self, websocket: WebSocket,lobbyID: int):
+		connections = self.active_lobbys[lobbyID].copy()
+		for connection in connections:
+			if connection != websocket:
+				await connection.close(code=status.WS_1001_GOING_AWAY)
+
+	async def host_disconnect(self, websocket: WebSocket, lobbyID: int):
 		if websocket in self.active_connections.keys():
+			userID = self.active_connections[websocket]
 			del self.active_connections[websocket]
 			self.active_lobbys[lobbyID].remove(websocket)
+			with db_session(optimistic=False):
+				game = db.Game.get(game_id=lobbyID)
+				if game is not None:
+					if not game.isStarted:
+						game.delete()
+						db.Player.get(player_id=userID).delete()
+
+	def disconnect(self, websocket: WebSocket, lobbyID: int):
+		if websocket in self.active_connections.keys():
+			userID = self.active_connections[websocket]
+			del self.active_connections[websocket]
+			self.active_lobbys[lobbyID].remove(websocket)
+			with db_session(optimistic=False):
+				game = db.Game.get(game_id=lobbyID)
+				if game is not None:
+					if not game.isStarted:
+						db.Player.get(player_id=userID).delete()
+						game.playerCount -= 1
 
 	async def send_personal_message(self, message: List[str], websocket: WebSocket):
 		await websocket.send_json(message)
@@ -49,20 +74,22 @@ class ConnectionManager:
 			await connection.send_json(message)
 
 	async def lobby_broadcast(self, message: List[str], lobbyID: int):
-		for connection in self.active_lobbys[lobbyID]:
-			await connection.send_json(message)
+		if lobbyID in self.active_lobbys.keys():
+			for connection in self.active_lobbys[lobbyID]:
+				await connection.send_json(message)
 
 	async def getPlayers(self, lobbyID: int):
 		player_list = []
-		for connection in self.active_lobbys[lobbyID]:
-			with db_session:
-				player = db.Player.get(player_id=self.active_connections[connection])
-			#If we've gotten this far this should never happen, but still
-			if player is None or player.lobby is None:
-				await connection.close(code=status.WS_1008_POLICY_VIOLATION)
-				return
-			else:
-				player_list.append(player.nickName)
+		if lobbyID in self.active_lobbys.keys():
+			for connection in self.active_lobbys[lobbyID]:
+				with db_session:
+					player = db.Player.get(player_id=self.active_connections[connection])
+				#If we've gotten this far this should never happen, but still
+				if player is None or player.lobby is None:
+					await connection.close(code=status.WS_1008_POLICY_VIOLATION)
+					return
+				else:
+					player_list.append(player.nickName)
 		return player_list
 		
 manager = ConnectionManager()
@@ -100,21 +127,27 @@ async def getAvailableGames():
 async def getPlayers(websocket: WebSocket, userID: int):
 	with db_session:
 			player = db.Player.get(player_id=userID)
-			if player is None or player.lobby is None:
+			if player is None or player.lobby is None or manager.exists(userID):
 				await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
 				return
 			lobby = player.lobby
+			isHost = player.hostOf == lobby
 	try:
 		await manager.connect(websocket, userID)
 		await manager.lobby_broadcast(await manager.getPlayers(lobby.game_id), lobby.game_id)
 		while True:
 			try:
-				await asyncio.wait_for(websocket.receive_text(), 0.0001)
+				await asyncio.wait_for(await websocket.receive_text(), 0.0001)
 			except asyncio.TimeoutError:
 				pass
 	except WebSocketDisconnect:
-		manager.disconnect(websocket, lobby.game_id)
-		await manager.lobby_broadcast(await manager.getPlayers(lobby.game_id), lobby.game_id)
+		if isHost:
+			await manager.disconnect_everyone(websocket, lobby.game_id)
+			await manager.host_disconnect(websocket, lobby.game_id)
+		else:
+			manager.disconnect(websocket, lobby.game_id)
+			await asyncio.sleep(0.1)
+			await manager.lobby_broadcast(await manager.getPlayers(lobby.game_id), lobby.game_id)
 
 @game.post("/getPlayersPost", status_code=status.HTTP_200_OK)
 async def getPlayersPost(userID: int = Body(...)):
