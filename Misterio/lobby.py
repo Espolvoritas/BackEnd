@@ -149,19 +149,6 @@ async def handleLobby(websocket: WebSocket, userID: int):
 			await asyncio.sleep(0.1)
 			await manager.lobby_broadcast(await manager.getPlayers(lobby.game_id), lobby.game_id)
 
-@game.post("/getPlayersPost", status_code=status.HTTP_200_OK)
-async def getPlayersPost(userID: int = Body(...)):
-	with db_session:
-		player_list = []
-		player = db.Player.get(player_id=userID)
-		if player is None and player.lobby is None:
-			raise HTTPException(status_code=400, detail="Player does not exist or is not in a lobby")
-		current_game = player.lobby
-		players_query = select(p for p in current_game.players).order_by(lambda p: p.player_id)
-		for player in players_query:
-			player_list.append(player.nickName)
-		return player_list
-
 @game.post("/startGame", status_code=status.HTTP_200_OK)
 async def startGame(userID: int = Body(...)):
 	with db_session:
