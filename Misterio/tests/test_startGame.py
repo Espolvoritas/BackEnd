@@ -71,8 +71,8 @@ def test_startGame_two_players():
 	game_id = create_new_game(host).json()['game_id']
 	expectedPlayers = create_players(1,game_id)
 	expectedPlayers.insert(0,host)
-	with client.websocket_connect("/lobby/getPlayers/1") as websocket1, \
-		client.websocket_connect("/lobby/getPlayers/2") as websocket2:
+	with client.websocket_connect("/lobby/1") as websocket1, \
+		client.websocket_connect("/lobby/2") as websocket2:
 		try:
 			data = websocket1.receive_json()
 			for player, expected in zip(data, expectedPlayers):
@@ -98,8 +98,8 @@ def test_startGame_not_host():
 	game_id = create_new_game(host).json()['game_id']
 	expectedPlayers = create_players(1,game_id)
 	expectedPlayers.insert(0,host)
-	with client.websocket_connect("/lobby/getPlayers/1") as websocket1, \
-		client.websocket_connect("/lobby/getPlayers/2") as websocket2:
+	with client.websocket_connect("/lobby/1") as websocket1, \
+		client.websocket_connect("/lobby/2") as websocket2:
 		try:
 			data = websocket1.receive_json()
 			for player, expected in zip(data, expectedPlayers):

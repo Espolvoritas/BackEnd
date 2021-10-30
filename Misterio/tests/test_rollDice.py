@@ -64,8 +64,8 @@ def test_send_one_roll():
 	game_id = create_new_game(host).json()['game_id']
 	expectedPlayers = create_players(1,game_id)
 	expectedPlayers.insert(0,host)
-	with client.websocket_connect("/lobby/getPlayers/1") as websocket1, \
-		client.websocket_connect("/lobby/getPlayers/2") as websocket2:
+	with client.websocket_connect("/lobby/1") as websocket1, \
+		client.websocket_connect("/lobby/2") as websocket2:
 		try:
 			data = websocket1.receive_json()
 			for player, expected in zip(data, expectedPlayers):
@@ -90,7 +90,7 @@ def test_send_one_roll():
 		current_player = db.Game.get(game_id=1).currentPlayer.player_id
 		current_player_nickName = db.Game.get(game_id=1).currentPlayer.nickName
 		next_player = db.Game.get(game_id=1).currentPlayer.nextPlayer.nickName
-	with client.websocket_connect("/gameBoard/" + str(current_player) +"/rollDice") as websocket1:
+	with client.websocket_connect("/gameBoard/" + str(current_player)) as websocket1:
 		try:
 			data = websocket1.receive_json()
 			assert current_player_nickName == data
@@ -111,8 +111,8 @@ def test_send_one_roll_not_in_turn():
 	game_id = create_new_game(host).json()['game_id']
 	expectedPlayers = create_players(1,game_id)
 	expectedPlayers.insert(0,host)
-	with client.websocket_connect("/lobby/getPlayers/1") as websocket1, \
-		client.websocket_connect("/lobby/getPlayers/2") as websocket2:
+	with client.websocket_connect("/lobby/1") as websocket1, \
+		client.websocket_connect("/lobby/2") as websocket2:
 		try:
 			data = websocket1.receive_json()
 			for player, expected in zip(data, expectedPlayers):
@@ -135,7 +135,7 @@ def test_send_one_roll_not_in_turn():
 	roll = random.randint(1,6)
 	with db_session:
 		wrong_player = db.Game.get(game_id=1).currentPlayer.nextPlayer.player_id
-	with client.websocket_connect("/gameBoard/" + str(wrong_player) +"/rollDice") as websocket1:
+	with client.websocket_connect("/gameBoard/" + str(wrong_player)) as websocket1:
 		try:
 			websocket1.send_text(roll)
 			websocket1.close()

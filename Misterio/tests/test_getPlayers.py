@@ -51,13 +51,13 @@ def test_no_lobby():
 	create_new_game(host)
 	with db_session:
 		player = db.Player(nickName=get_random_string(6))
-	with client.websocket_connect("/lobby/getPlayers/1") as websocket1:
+	with client.websocket_connect("/lobby/1") as websocket1:
 		try:
 			data = websocket1.receive_json()
 			for player in data:
 				assert player == host
 				with pytest.raises(WebSocketDisconnect, match='1008'):
-					with client.websocket_connect("/lobby/getPlayers/2"):
+					with client.websocket_connect("/lobby/2"):
 						raise WebSocketDisconnect(1000)
 		except KeyboardInterrupt:
 			websocket1.close()
@@ -66,13 +66,13 @@ def test_invalid_player():
 	clear_tables()
 	host = get_random_string(6)
 	create_new_game(host)	
-	with client.websocket_connect("/lobby/getPlayers/1") as websocket1:
+	with client.websocket_connect("/lobby/1") as websocket1:
 		try:
 			data = websocket1.receive_json()
 			for player in data:
 				assert player == host
 			with pytest.raises(WebSocketDisconnect, match='1008'):
-				with client.websocket_connect("/lobby/getPlayers/2"):
+				with client.websocket_connect("/lobby/2"):
 					raise WebSocketDisconnect(1000)
 		except KeyboardInterrupt:
 			websocket1.close()
@@ -83,8 +83,8 @@ def test_two_lobbys():
 	create_new_game(host1)
 	host2 = get_random_string(6)
 	create_new_game(host2)
-	with client.websocket_connect("/lobby/getPlayers/1") as websocket1, \
-		client.websocket_connect("/lobby/getPlayers/2") as websocket2:
+	with client.websocket_connect("/lobby/1") as websocket1, \
+		client.websocket_connect("/lobby/2") as websocket2:
 		try:
 			data = websocket1.receive_json()
 			for player in data:
@@ -102,13 +102,13 @@ def test_duplicate():
 	clear_tables()
 	host = get_random_string(6)
 	create_new_game(host)
-	with client.websocket_connect("/lobby/getPlayers/1") as websocket1:
+	with client.websocket_connect("/lobby/1") as websocket1:
 		try:
 			data = websocket1.receive_json()
 			for player in data:
 				assert player == host
 			with pytest.raises(WebSocketDisconnect, match='1008'):
-				with client.websocket_connect("/lobby/getPlayers/1") as websocket2:
+				with client.websocket_connect("/lobby/1") as websocket2:
 					raise WebSocketDisconnect(1000)
 			websocket1.close()
 		except KeyboardInterrupt:
@@ -120,9 +120,9 @@ def test_leave_host():
 	game_id = create_new_game(host).json()['game_id']
 	expectedPlayers = create_players(1,game_id)
 	expectedPlayers.insert(0,host)
-	with client.websocket_connect("/lobby/getPlayers/1") as websocket1, \
+	with client.websocket_connect("/lobby/1") as websocket1, \
 		pytest.raises(WebSocketDisconnect, match='1001'):
-		with client.websocket_connect("/lobby/getPlayers/2") as websocket2:
+		with client.websocket_connect("/lobby/2") as websocket2:
 			try:
 				data = websocket1.receive_json()
 				for player, expected in zip(data, expectedPlayers):
@@ -143,8 +143,8 @@ def test_get_two_players():
 	game_id = create_new_game(host).json()['game_id']
 	expectedPlayers = create_players(1,game_id)
 	expectedPlayers.insert(0,host)
-	with client.websocket_connect("/lobby/getPlayers/1") as websocket1, \
-		client.websocket_connect("/lobby/getPlayers/2") as websocket2:
+	with client.websocket_connect("/lobby/1") as websocket1, \
+		client.websocket_connect("/lobby/2") as websocket2:
 		try:
 			data = websocket1.receive_json()
 			for player, expected in zip(data, expectedPlayers):

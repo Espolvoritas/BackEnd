@@ -123,8 +123,8 @@ async def getAvailableGames():
         
     return gamelist
 
-@game.websocket("/lobby/getPlayers/{userID}")
-async def getPlayers(websocket: WebSocket, userID: int):
+@game.websocket("/lobby/{userID}")
+async def handleLobby(websocket: WebSocket, userID: int):
 	with db_session:
 			player = db.Player.get(player_id=userID)
 			if player is None or player.lobby is None or manager.exists(userID):
