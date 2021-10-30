@@ -7,8 +7,8 @@ from starlette.responses import Response
 import Misterio.database as db
 from pony.orm import db_session, flush, select
 
-game = APIRouter(prefix="/game")
-logger = logging.getLogger("game")
+game = APIRouter(prefix="/lobby")
+logger = logging.getLogger("lobby")
 
 class userConnections(TypedDict):
 	websocket: WebSocket
@@ -123,7 +123,7 @@ async def getAvailableGames():
         
     return gamelist
 
-@game.websocket("/game/getPlayers/{userID}")
+@game.websocket("/lobby/getPlayers/{userID}")
 async def getPlayers(websocket: WebSocket, userID: int):
 	with db_session:
 			player = db.Player.get(player_id=userID)

@@ -37,14 +37,14 @@ def create_players(quantity: int, game_id: int):
 	return player_list
 
 def create_new_game(nickName: str):
-	return client.post("/game/createNew",
+	return client.post("/lobby/createNew",
 		headers={"accept": "application/json",
 				"Content-Type" : "application/json"},
 				json={"name": get_random_string(6), "host": nickName}
 				)
 
 def startGame(userID):
-	return client.post("/game/startGame",
+	return client.post("/lobby/startGame",
 				headers={"accept": "application/json",
 				"Content-Type" : "application/json"},
 				json=f'{userID}'
@@ -56,7 +56,7 @@ def test_start_game_one_player():
 	response = create_new_game(host)
 	
 	assert response.status_code == 201
-	response = client.post("/game/startGame",
+	response = client.post("/lobby/startGame",
 				headers={"accept": "application/json",
 				"Content-Type" : "application/json"},
 				json='1'
@@ -71,8 +71,8 @@ def test_startGame_two_players():
 	game_id = create_new_game(host).json()['game_id']
 	expectedPlayers = create_players(1,game_id)
 	expectedPlayers.insert(0,host)
-	with client.websocket_connect("/game/getPlayers/1") as websocket1, \
-		client.websocket_connect("/game/getPlayers/2") as websocket2:
+	with client.websocket_connect("/lobby/getPlayers/1") as websocket1, \
+		client.websocket_connect("/lobby/getPlayers/2") as websocket2:
 		try:
 			data = websocket1.receive_json()
 			for player, expected in zip(data, expectedPlayers):
@@ -98,8 +98,8 @@ def test_startGame_not_host():
 	game_id = create_new_game(host).json()['game_id']
 	expectedPlayers = create_players(1,game_id)
 	expectedPlayers.insert(0,host)
-	with client.websocket_connect("/game/getPlayers/1") as websocket1, \
-		client.websocket_connect("/game/getPlayers/2") as websocket2:
+	with client.websocket_connect("/lobby/getPlayers/1") as websocket1, \
+		client.websocket_connect("/lobby/getPlayers/2") as websocket2:
 		try:
 			data = websocket1.receive_json()
 			for player, expected in zip(data, expectedPlayers):

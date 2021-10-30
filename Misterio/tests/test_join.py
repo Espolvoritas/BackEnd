@@ -34,11 +34,11 @@ def test_join():
         taken_nickname = "foo2"
         free_nickname = "foo4"
 
-    response1 = client.post("/game/joinCheck",
+    response1 = client.post("/lobby/joinCheck",
                         headers={"accept": "application/json", "Content-Type" : "application/json"},
                         json={"gameId": game_id, "playerNickname": taken_nickname}).json()
 
-    response2 = client.post("/game/joinCheck",
+    response2 = client.post("/lobby/joinCheck",
                         headers={"accept": "application/json", "Content-Type" : "application/json"},
                         json={"gameId": game_id, "playerNickname": free_nickname}).json()
 
