@@ -1,4 +1,4 @@
-from server import app
+from Misterio.server import app
 from fastapi.testclient import TestClient
 import string    
 import random # define the random module  

@@ -1,28 +1,27 @@
-from server import app
+from Misterio.server import app
 from fastapi.testclient import TestClient
 
-import database
-from database import db
+import Misterio.database as db
 from pony.orm import db_session, flush
 
 client = TestClient(app)
 
 def clear_tables():
-    db.drop_table(db.Player, if_exists=True, with_all_data=True)
-    db.drop_table(db.Game, if_exists=True, with_all_data=True)
-    db.create_tables()
+    db.db.drop_table(db.Player, if_exists=True, with_all_data=True)
+    db.db.drop_table(db.Game, if_exists=True, with_all_data=True)
+    db.db.create_tables()
 
 def test_join():
     clear_tables()
 
     with db_session:
        
-        player1 = database.Player(nickName="foo1")
-        player2 = database.Player(nickName="foo2")
-        player3 = database.Player(nickName="foo3")
+        player1 = db.Player(nickName="foo1")
+        player2 = db.Player(nickName="foo2")
+        player3 = db.Player(nickName="foo3")
         flush()
         
-        game = database.Game(name="fooGame", host=player2, isStarted=False)
+        game = db.Game(name="fooGame", host=player2, isStarted=False)
         flush()
         game.addPlayer(player1)
         flush()

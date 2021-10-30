@@ -1,5 +1,5 @@
 import os
-import database as db
+import Misterio.database as db
 from pony.orm import db_session
 from pony.orm import flush
 

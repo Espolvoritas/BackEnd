@@ -1,11 +1,11 @@
 from typing import Match
-from server import app
+from Misterio.server import app
 from fastapi.testclient import TestClient
 import string
 import pytest
 import asyncio
 from fastapi import WebSocketDisconnect
-import database as db
+import Misterio.database as db
 from pony.orm import db_session, flush, select
 import random # define the random module  
 

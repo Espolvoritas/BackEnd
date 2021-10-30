@@ -4,7 +4,7 @@ import asyncio
 from typing import List, TypedDict
 from starlette.responses import Response
 
-import database as db
+import Misterio.database as db
 from pony.orm import db_session, flush, select
 
 game = APIRouter(prefix="/game")

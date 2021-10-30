@@ -1,5 +1,5 @@
 import unittest
-import database as db
+import Misterio.database as db
 from pony.orm import Database, db_session
 from pony.orm import select, flush, commit
 
