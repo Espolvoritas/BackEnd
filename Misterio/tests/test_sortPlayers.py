@@ -1,8 +1,7 @@
-import os
-import database as db
 from pony.orm import db_session
 from pony.orm import flush
 
+import Misterio.database as db
 
 def clear_tables():
     db.db.drop_table(db.Player, if_exists=True, with_all_data=True)

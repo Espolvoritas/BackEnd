@@ -1,9 +1,10 @@
-from server import app
 from fastapi.testclient import TestClient
 from pony.orm import db_session, flush
 import string    
 import random # define the random module  
-import database as db
+
+from Misterio.server import app
+import Misterio.database as db
 
 client = TestClient(app)
 
@@ -22,7 +23,7 @@ def clear_tables():
 
 def test_no_games():
     clear_tables()
-    response = client.get("/game/availableGames")
+    response = client.get("/lobby/availableGames")
     assert response.status_code == 204
 
 def test_get_single_game():
@@ -40,7 +41,7 @@ def test_get_single_game():
         gamejson["players"] = int(newGame.playerCount)
         gamejson["host"] = newGame.host.nickName
         gamejson["password"] = False
-    response = client.get("/game/availableGames")
+    response = client.get("/lobby/availableGames")
 
     #Check response
     assert response.status_code == 200
@@ -95,7 +96,7 @@ def test_various_games():
             gamesjson.append(gamejson)
         flush()
 
-    response = client.get("/game/availableGames")
+    response = client.get("/lobby/availableGames")
     assert response.status_code == 200
     assert response.json() == gamesjson
 
@@ -135,7 +136,7 @@ def test_full_games():
                 n += 1
                 prev = n
         flush()
-    response = client.get("/game/availableGames")
+    response = client.get("/lobby/availableGames")
     assert response.status_code == 204
     
 
@@ -185,6 +186,6 @@ def test_full_and_available():
             gamejson["host"] = g.host.nickName
             gamejson["password"] = False
             gamesjson.append(gamejson)
-    response = client.get("/game/availableGames")
+    response = client.get("/lobby/availableGames")
     assert response.status_code == 200
     assert response.json() == gamesjson

@@ -1,7 +1,9 @@
 from fastapi import APIRouter, status, WebSocket, WebSocketDisconnect
-import database as db
 from pony.orm import db_session
-from games import ConnectionManager
+
+import database as db
+from lobby import ConnectionManager
+
 gameBoard = APIRouter(prefix="/gameBoard")
 
 gameBoard_manager = ConnectionManager()
@@ -19,8 +21,8 @@ def player_in_turn(userID: int):
 	lobby = player.lobby
 	return userID == lobby.currentPlayer.player_id
 
-@gameBoard.websocket("/gameBoard/{userID}/rollDice")
-async def rollDice(websocket: WebSocket, userID: int):
+@gameBoard.websocket("/gameBoard/{userID}")
+async def handleTurn(websocket: WebSocket, userID: int):
 	await gameBoard_manager.connect(websocket, userID)
 	with db_session:
 		player = db.Player.get(player_id=userID)
