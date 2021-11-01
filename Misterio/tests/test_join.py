@@ -36,7 +36,7 @@ def test_join():
 
     response1 = client.post("/lobby/joinCheck",
                         headers={"accept": "application/json", "Content-Type" : "application/json"},
-                        json={"gameId": game_id, "playerNickname": taken_nickname}).json()
+                        json={"gameId": game_id, "playerNickname": taken_nickname})
 
     response2 = client.post("/lobby/joinCheck",
                         headers={"accept": "application/json", "Content-Type" : "application/json"},
@@ -47,5 +47,5 @@ def test_join():
 
     clear_tables()
 
-    assert(response1["nicknameIsValid"] == False)
+    assert response1.status_code == 400
     assert(response2["nicknameIsValid"] == True)

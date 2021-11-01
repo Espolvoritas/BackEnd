@@ -180,7 +180,7 @@ async def joinGame(gameId: int = Body(...), playerNickname: str = Body(...)):
         nicknameIsTaken = playerNickname in existingNicknames
 
         if nicknameIsTaken:
-            return { "nicknameIsValid": False, "playerId": -1, "gameIdIsValid": False }
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Nickname already in use")
 
         if chosenGame is not None and not nicknameIsTaken:
 
