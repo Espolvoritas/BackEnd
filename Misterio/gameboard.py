@@ -1,7 +1,9 @@
 from fastapi import APIRouter, status, WebSocket, WebSocketDisconnect
-import Misterio.database as db
 from pony.orm import db_session
+
+import Misterio.database as db
 from Misterio.lobby import ConnectionManager
+
 gameBoard = APIRouter(prefix="/gameBoard")
 
 gameBoard_manager = ConnectionManager()

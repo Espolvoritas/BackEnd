@@ -1,8 +1,8 @@
-from Misterio.server import app
 from fastapi.testclient import TestClient
-
-import Misterio.database as db
 from pony.orm import db_session, flush
+
+from Misterio.server import app
+import Misterio.database as db
 
 client = TestClient(app)
 

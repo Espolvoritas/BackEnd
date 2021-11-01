@@ -1,6 +1,5 @@
 from pony.orm import Database, PrimaryKey, Optional, Set, Required
 from pony.orm import select
-
 from random import shuffle
 
 db = Database()

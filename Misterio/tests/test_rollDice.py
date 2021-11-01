@@ -1,12 +1,12 @@
-from Misterio.server import app
 from fastapi.testclient import TestClient
+from pony.orm import db_session, flush
 import string
-from time import sleep
-import Misterio.database as db
 import logging
-from pony.orm import db_session, flush, select
-import random # define the random module  
 import random
+
+import Misterio.database as db
+from Misterio.server import app
+
 client = TestClient(app)
 logger = logging.getLogger("gameboard")
 

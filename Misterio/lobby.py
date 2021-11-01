@@ -1,11 +1,11 @@
 from fastapi import APIRouter, HTTPException, status, WebSocket, WebSocketDisconnect ,Body
-import logging
-import asyncio
+from pony.orm import db_session, flush, select
 from typing import List, TypedDict
 from starlette.responses import Response
+import logging
+import asyncio
 
 import Misterio.database as db
-from pony.orm import db_session, flush, select
 
 game = APIRouter(prefix="/lobby")
 logger = logging.getLogger("lobby")

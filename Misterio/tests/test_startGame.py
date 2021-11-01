@@ -1,11 +1,12 @@
-from Misterio.server import app
+from fastapi import WebSocketDisconnect
 from fastapi.testclient import TestClient
+from pony.orm import db_session
 import string    
 import random # define the random module  
-import Misterio.database as db
-from fastapi import WebSocketDisconnect
 import pytest
-from pony.orm import db_session
+
+from Misterio.server import app
+import Misterio.database as db
 
 client = TestClient(app)
 
