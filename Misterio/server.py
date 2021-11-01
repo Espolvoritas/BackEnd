@@ -2,8 +2,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 
-from Misterio.lobby import game
-from Misterio.gameboard import gameBoard
+from lobby import game
+from gameboard import gameBoard
 
 app = FastAPI()
 

@@ -5,7 +5,7 @@ from starlette.responses import Response
 import logging
 import asyncio
 
-import Misterio.database as db
+import database as db
 
 game = APIRouter(prefix="/lobby")
 logger = logging.getLogger("lobby")
