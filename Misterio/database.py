@@ -1,8 +1,20 @@
 from pony.orm import Database, PrimaryKey, Optional, Set, Required
 from pony.orm import select
 from random import shuffle
+from enum import Enum
 
 db = Database()
+
+Color = Enum( 
+              RED=1,
+              GREEN=2,
+              BLUE=3,
+              WHITE=4,
+              BLACK=5,
+              YELLOW=6,
+              PINK=7, 
+              ORANGE=8
+            )
 
 class Game(db.Entity):
     game_id = PrimaryKey(int, auto=True) 
@@ -38,7 +50,7 @@ class Player(db.Entity):
     nextPlayer = Optional('Player', reverse="previousPlayer")
     previousPlayer = Optional('Player', reverse="nextPlayer")
     currentDiceRoll = Optional(int)
-
+    color = Required(Color)
     def setNext(self, nextPlayer):
         self.nextPlayer = nextPlayer
 
