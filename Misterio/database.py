@@ -27,6 +27,37 @@ class Card(db.Entity):
     cardType = Optional(str)
     cardName = Optional(str)
 
+class Card(Enum):
+    pass
+
+class Monster(Card):
+    Jekyll = 'Dr. Jekyll Mr. Hyde'
+    Dracula = 'Dracula'
+    Ghost = 'Fantasma'
+    Frankenstein = 'Frankenstein'
+    Werewolf = 'Hombre Lobo'
+    Mummy = 'Momia'
+
+
+class Victim(Card):
+    Housekeeper = 'Ama de Llaves'
+    Count = 'Conde'
+    Countess = 'Condesa'
+    Maiden = 'Doncella'
+    Gardener = 'Jardinero'
+    Butler = 'Mayordomo'
+
+
+class Room(Card):
+    Bedroom = 'Alcoba'
+    Library = 'Biblioteca'
+    Cellar = 'Bodega'
+    Carport = 'Cochera'
+    Laboratory = 'Laboratorio'
+    Pantheon = 'Panteon'
+    Hall = 'Salon'
+    Lobby = 'Vestibulo'
+
 
 class Game(db.Entity):
     game_id = PrimaryKey(int, auto=True) 
@@ -81,6 +112,7 @@ class Player(db.Entity):
     def setColor(self, color):
         self.color = color
 
+    cards = Set(Card)
     location = Optional("Cell", reverse="occupiers")
     trapped = Optional(bool)
     inRoom = Optional(bool)
