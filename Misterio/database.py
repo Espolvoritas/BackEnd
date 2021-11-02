@@ -7,19 +7,6 @@ from itertools import product
 
 db = Database()
 
-class Cell(db.Entity):
-    cellId = PrimaryKey(int, auto=True)
-    neighbors = Set("Neighbor", reverse="neighborOf")
-    occupiers = Set("Player", reverse="location")
-    game = Optional("Game", reverse="board")
-
-    x = Optional(int)
-    y = Optional(int)
-
-    isTrap = Optional(bool)
-    roomName = Optional(str)
-
-
 class Card(db.Entity):
     cardId = PrimaryKey(int, auto=True)
     player = Optional("Player", reverse="cards")
@@ -75,11 +62,6 @@ class Player(db.Entity):
     def setNext(self, nextPlayer):
         self.nextPlayer = nextPlayer
 
-
-class Neighbor(db.Entity):
-    distance = Optional(int)
-    cell = Optional(Cell)
-    neighborOf = Optional(Cell)
 
 db.bind('sqlite', 'database.sqlite', create_db=True)  # Connect object `db` with database.
 db.generate_mapping(create_tables=True)  # Generate database
