@@ -40,7 +40,7 @@ class Game(db.Entity):
     culprit = Optional(str)
     room = Optional(str)
     victim = Optional(str)
-    board = Set("Cell", reverse="")
+    board = Set("Cell", reverse="game")
     
     def addPlayer(self, player):
         if (self.playerCount <= 6):
