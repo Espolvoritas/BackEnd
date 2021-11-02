@@ -155,7 +155,7 @@ class Player(db.Entity):
         self.color = color
 
     cards = Set(Card)
-    location = Optional("Cell", reverse="occupiers")
+    #location = Optional("Cell", reverse="occupiers")
     trapped = Optional(bool)
     inRoom = Optional(bool)
 
