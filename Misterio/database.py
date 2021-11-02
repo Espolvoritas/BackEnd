@@ -14,7 +14,12 @@ class ColorCode(Enum):
     YELLOW=6
     PINK=7
     ORANGE=8
-            )
+
+
+class Color(db.Entity):
+    color_bind_id = PrimaryKey(int, auto=True)
+    color = Required(str)
+    players = Set('Player', reverse='color')
 
 class Game(db.Entity):
     game_id = PrimaryKey(int, auto=True) 
