@@ -11,12 +11,6 @@ import Misterio.database as db
 
 client = TestClient(app)
 
-def clear_tables():
-    db.db.drop_table(db.Player, if_exists=True, with_all_data=True)
-    db.db.drop_table(db.Game, if_exists=True, with_all_data=True)
-    
-    db.db.create_tables()
-
 #aux function for getting random strings
 def get_random_string(length):
     # choose from all lowercase letter
@@ -46,7 +40,7 @@ def create_new_game(nickName: str):
 				)
 
 def test_no_lobby():
-	clear_tables()
+	db.clear_tables()
 	host = get_random_string(6)
 	create_new_game(host)
 	with db_session:
@@ -63,7 +57,7 @@ def test_no_lobby():
 			websocket1.close()
 
 def test_invalid_player():
-	clear_tables()
+	db.clear_tables()
 	host = get_random_string(6)
 	create_new_game(host)	
 	with client.websocket_connect("/lobby/1") as websocket1:
@@ -78,7 +72,7 @@ def test_invalid_player():
 			websocket1.close()
 
 def test_two_lobbys():
-	clear_tables()
+	db.clear_tables()
 	host1 = get_random_string(6)
 	create_new_game(host1)
 	host2 = get_random_string(6)
@@ -99,7 +93,7 @@ def test_two_lobbys():
 			websocket1.close()
 
 def test_duplicate():
-	clear_tables()
+	db.clear_tables()
 	host = get_random_string(6)
 	create_new_game(host)
 	with client.websocket_connect("/lobby/1") as websocket1:
@@ -115,7 +109,7 @@ def test_duplicate():
 			websocket1.close()
 
 def test_leave_host():
-	clear_tables()
+	db.clear_tables()
 	host = get_random_string(6)
 	game_id = create_new_game(host).json()['game_id']
 	expectedPlayers = create_players(1,game_id)
@@ -138,7 +132,7 @@ def test_leave_host():
 				websocket1.close()
 
 def test_get_two_players():
-	clear_tables()
+	db.clear_tables()
 	host = get_random_string(6)
 	game_id = create_new_game(host).json()['game_id']
 	expectedPlayers = create_players(1,game_id)

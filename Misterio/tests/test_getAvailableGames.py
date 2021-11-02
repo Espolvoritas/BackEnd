@@ -15,19 +15,13 @@ def get_random_string(length):
     result_str = "".join(random.choice(letters) for i in range(length))
     return result_str
 
-def clear_tables():
-    db.db.drop_table(db.Player, if_exists=True, with_all_data=True)
-    db.db.drop_table(db.Game, if_exists=True, with_all_data=True)
-    
-    db.db.create_tables()
-
 def test_no_games():
-    clear_tables()
+    db.clear_tables()
     response = client.get("/lobby/availableGames")
     assert response.status_code == 204
 
 def test_get_single_game():
-    clear_tables()
+    db.clear_tables()
     #Create a game
     with db_session:
         hostPlayer = db.Player(nickName="IAmHost")
@@ -49,7 +43,7 @@ def test_get_single_game():
     
 
 def test_various_games():
-    clear_tables()
+    db.clear_tables()
     with db_session:
         hosts = []
         for i in range(6):
@@ -101,7 +95,7 @@ def test_various_games():
     assert response.json() == gamesjson
 
 def test_full_games():
-    clear_tables()
+    db.clear_tables()
     with db_session:
         hosts = []
         for i in range(6):
@@ -141,7 +135,7 @@ def test_full_games():
     
 
 def test_full_and_available():
-    clear_tables()
+    db.clear_tables()
     with db_session:
         hosts = []
         for i in range(6):

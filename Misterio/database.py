@@ -57,7 +57,8 @@ class Player(db.Entity):
 db.bind('sqlite', 'database.sqlite', create_db=True)  # Connect object `db` with database.
 db.generate_mapping(create_tables=True)  # Generate database
 
-db.drop_table(Game, if_exists=True, with_all_data=True)
-db.drop_table(Player, if_exists=True, with_all_data=True)
-
-db.create_tables()
+def clear_tables():
+    db.drop_table(db.Player, if_exists=True, with_all_data=True)
+    db.drop_table(db.Game, if_exists=True, with_all_data=True)
+    db.drop_table(db.Color, if_exists=True, with_all_data=True)
+    db.create_tables()

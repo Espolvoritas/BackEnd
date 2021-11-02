@@ -10,12 +10,6 @@ import Misterio.database as db
 
 client = TestClient(app)
 
-def clear_tables():
-    db.db.drop_table(db.Player, if_exists=True, with_all_data=True)
-    db.db.drop_table(db.Game, if_exists=True, with_all_data=True)
-    
-    db.db.create_tables()
-
 #aux function for getting random strings
 def get_random_string(length):
     # choose from all lowercase letter
@@ -52,7 +46,7 @@ def startGame(userID):
 				)
 
 def test_start_game_one_player():
-	clear_tables()
+	db.clear_tables()
 	host = get_random_string(6)
 	response = create_new_game(host)
 	
@@ -67,7 +61,7 @@ def test_start_game_one_player():
 
 
 def test_startGame_two_players():
-	clear_tables()
+	db.clear_tables()
 	host = get_random_string(6)
 	game_id = create_new_game(host).json()['game_id']
 	expectedPlayers = create_players(1,game_id)
@@ -94,7 +88,7 @@ def test_startGame_two_players():
 			websocket1.close()
 
 def test_startGame_not_host():
-	clear_tables()
+	db.clear_tables()
 	host = get_random_string(6)
 	game_id = create_new_game(host).json()['game_id']
 	expectedPlayers = create_players(1,game_id)

@@ -11,12 +11,6 @@ client = TestClient(app)
 logger = logging.getLogger("gameboard")
 
 
-def clear_tables():
-    db.db.drop_table(db.Player, if_exists=True, with_all_data=True)
-    db.db.drop_table(db.Game, if_exists=True, with_all_data=True)
-    
-    db.db.create_tables()
-
 #aux function for getting random strings
 def get_random_string(length):
     # choose from all lowercase letter
@@ -47,7 +41,7 @@ def create_new_game(nickName: str):
 				)
 
 def create_player():
-	clear_tables()
+	db.clear_tables()
 	host = get_random_string(6)
 	game_id = create_new_game(host).json()['game_id']
 
@@ -59,7 +53,7 @@ def startGame(userID):
 				)
 
 def test_send_one_roll():
-	clear_tables()
+	db.clear_tables()
 	host = get_random_string(6)
 	game_id = create_new_game(host).json()['game_id']
 	expectedPlayers = create_players(1,game_id)
@@ -106,7 +100,7 @@ def test_send_one_roll():
 	assert curr_roll == roll
 
 def test_send_one_roll_not_in_turn():
-	clear_tables()
+	db.clear_tables()
 	host = get_random_string(6)
 	game_id = create_new_game(host).json()['game_id']
 	expectedPlayers = create_players(1,game_id)
