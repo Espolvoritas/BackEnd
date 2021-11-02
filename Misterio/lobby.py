@@ -101,7 +101,7 @@ manager = ConnectionManager()
 def get_colors(gameId):
 	with db_session:
 		lobby = db.Game.get(game_id=gameId)
-	new_colors = lobby.getAvailableColors()
+		new_colors = lobby.getAvailableColors()
 	color_list = []
 	colorResponse = {}
 	for c in new_colors:
