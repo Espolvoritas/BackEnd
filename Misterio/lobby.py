@@ -89,7 +89,10 @@ class ConnectionManager:
 					await connection.close(code=status.WS_1008_POLICY_VIOLATION)
 					return
 				else:
-					player_list.append(player.nickName)
+					player = {}
+					player["nickName"] = player.nickName
+					player["Color"] = player.color.color_id
+					player_list.append(player)
 		return player_list
 		
 manager = ConnectionManager()
@@ -170,7 +173,6 @@ async def startGame(userID: int = Body(...)):
 async def joinGame(gameId: int = Body(...), playerNickname: str = Body(...)):
 
     with db_session:
-
         chosenGame = db.Game.get(game_id=gameId)
 
         if chosenGame is None:
@@ -209,8 +211,9 @@ async def pickColor(player_id: int = Body(...), color: int = Body(...)):
 			player.setColor(chosen_color)
 			new_colors = lobby.getAvailableColors()
 			color_list = []
+			colorResponse = {}
 			for c in new_colors:
-				colorResponse = {}
-				colorResponse["color_id"] = c.color_id
-				colorResponse["colorName"] = c.colorName
+				color_list.append(c.color_id)
+			colorResponse["Code"] = "STATUS_COLOR_LIST"
+			colorResponse["colors"] = color_list
 			await manager.lobby_broadcast(colorResponse, lobby.game_id)

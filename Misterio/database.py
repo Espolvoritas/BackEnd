@@ -29,11 +29,11 @@ class Game(db.Entity):
     currentPlayer = Optional('Player', reverse="currentPlayerOf")
     playerCount = Required(int, default=0)
     isStarted = Required(bool)
-    
+
     def addPlayer(self, player):
         if (self.playerCount <= 6):
             self.players.add(player)
-            self.playerCount += 1
+            self.playerCount += 1   
         colors = self.getAvailableColors()
         player.setColor(choice(colors))
         
@@ -84,5 +84,5 @@ clear_tables()
 #Colors shouldn't be modified outside this session
 with db_session:
     for color in ColorCode:
-        color = Color(color=color.name)
+        color = Color(colorName=color.name)
 
