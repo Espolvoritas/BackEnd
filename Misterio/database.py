@@ -1,6 +1,6 @@
 from pony.orm import Database, PrimaryKey, Optional, Set, Required
 from pony.orm import select
-from random import shuffle
+from random import shuffle, choice
 from enum import Enum
 
 db = Database()
@@ -34,6 +34,8 @@ class Game(db.Entity):
         if (self.playerCount <= 6):
             self.players.add(player)
             self.playerCount += 1
+        colors = self.getAvailableColors()
+        player.setColor(choice(colors))
         
     def getPlayers(self):
         return select(p for p in self.players)
