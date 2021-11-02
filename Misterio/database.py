@@ -5,15 +5,15 @@ from enum import Enum
 
 db = Database()
 
-Color = Enum( 
-              RED=1,
-              GREEN=2,
-              BLUE=3,
-              WHITE=4,
-              BLACK=5,
-              YELLOW=6,
-              PINK=7, 
-              ORANGE=8
+class ColorCode(Enum):
+    RED=1
+    GREEN=2
+    BLUE=3
+    WHITE=4
+    BLACK=5
+    YELLOW=6
+    PINK=7
+    ORANGE=8
             )
 
 class Game(db.Entity):
