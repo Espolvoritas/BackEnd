@@ -92,10 +92,23 @@ class ConnectionManager:
 					playerjson = {}
 					playerjson["nickName"] = player.nickName
 					playerjson["Color"] = player.color.color_id
-					player_list.append(player)
+					player_list.append(playerjson)
+			await manager.lobby_broadcast(get_colors(player.lobby.game_id), player.lobby.game_id)
 		return player_list
 		
 manager = ConnectionManager()
+
+def get_colors(gameId):
+	with db_session:
+		lobby = db.Game.get(game_id=gameId)
+	new_colors = lobby.getAvailableColors()
+	color_list = []
+	colorResponse = {}
+	for c in new_colors:
+		color_list.append(c.color_id)
+	colorResponse["Code"] = "STATUS_COLOR_LIST"
+	colorResponse["colors"] = color_list
+	return colorResponse
 
 @game.post("/createNew", status_code=status.HTTP_201_CREATED)
 async def createNewGame(name: str = Body(...), host: str = Body(...)):
@@ -209,11 +222,4 @@ async def pickColor(player_id: int = Body(...), color: int = Body(...)):
 			raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Color doesn't exists or is already in use")
 		else:
 			player.setColor(chosen_color)
-			new_colors = lobby.getAvailableColors()
-			color_list = []
-			colorResponse = {}
-			for c in new_colors:
-				color_list.append(c.color_id)
-			colorResponse["Code"] = "STATUS_COLOR_LIST"
-			colorResponse["colors"] = color_list
-			await manager.lobby_broadcast(colorResponse, lobby.game_id)
+			await manager.lobby_broadcast(get_colors(lobby.game_id), lobby.game_id)
