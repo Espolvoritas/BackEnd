@@ -21,6 +21,26 @@ class Color(db.Entity):
     colorName = Required(str)
     players = Set('Player', reverse='color')
 
+class Cell(db.Entity):
+    cellId = PrimaryKey(int, auto=True)
+    neighbors = Set("Neighbor", reverse="neighborOf")
+    occupiers = Set("Player", reverse="location")
+    game = Optional("Game", reverse="board")
+
+    x = Optional(int)
+    y = Optional(int)
+
+    isTrap = Optional(bool)
+    roomName = Optional(str)
+
+
+class Card(db.Entity):
+    cardId = PrimaryKey(int, auto=True)
+    player = Optional("Player", reverse="cards")
+    cardType = Optional(str)
+    cardName = Optional(str)
+
+
 class Game(db.Entity):
     game_id = PrimaryKey(int, auto=True) 
     name = Required(str)
@@ -30,6 +50,12 @@ class Game(db.Entity):
     playerCount = Required(int, default=0)
     isStarted = Required(bool, default=False)
 
+    color = Optional(str)
+    culprit = Optional(str)
+    room = Optional(str)
+    victim = Optional(str)
+    board = Set("Cell", reverse="")
+    
     def addPlayer(self, player):
         if (self.playerCount <= 6):
             self.players.add(player)
@@ -69,8 +95,18 @@ class Player(db.Entity):
     def setColor(self, color):
         self.color = color
 
+    location = Optional("Cell", reverse="occupiers")
+    trapped = Optional(bool)
+    inRoom = Optional(bool)
+
     def setNext(self, nextPlayer):
         self.nextPlayer = nextPlayer
+
+
+class Neighbor(db.Entity):
+    distance = Optional(int)
+    cell = Optional(Cell)
+    neighborOf = Optional(Cell)
 
 db.bind('sqlite', 'database.sqlite', create_db=True)  # Connect object `db` with database.
 db.generate_mapping(create_tables=True)  # Generate database
