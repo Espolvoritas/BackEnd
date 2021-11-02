@@ -71,7 +71,7 @@ class Game(db.Entity):
     culprit = Optional(str)
     room = Optional(str)
     victim = Optional(str)
-    board = Set("Cell", reverse="game")
+    # board = Set("Cell", reverse="game")
     
     def addPlayer(self, player):
         if (self.playerCount <= 6):
@@ -113,7 +113,7 @@ class Player(db.Entity):
         self.color = color
 
     cards = Set(Card)
-    location = Optional("Cell", reverse="occupiers")
+    #location = Optional("Cell", reverse="occupiers")
     trapped = Optional(bool)
     inRoom = Optional(bool)
 
