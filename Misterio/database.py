@@ -224,7 +224,10 @@ class Cell(db.Entity):
 
             return reachable
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> ad7ad42... Remove Cell and Neighbor
 db.bind('sqlite', 'database.sqlite', create_db=True)  # Connect object `db` with database.
 db.generate_mapping(create_tables=True)  # Generate database
 
