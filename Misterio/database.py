@@ -61,7 +61,11 @@ class Player(db.Entity):
     nextPlayer = Optional('Player', reverse="previousPlayer")
     previousPlayer = Optional('Player', reverse="nextPlayer")
     currentDiceRoll = Optional(int)
-    color = Required(Color)
+    color = Optional(Color, reverse='players')
+
+    def setColor(self, color):
+        self.color = color
+
     def setNext(self, nextPlayer):
         self.nextPlayer = nextPlayer
 
