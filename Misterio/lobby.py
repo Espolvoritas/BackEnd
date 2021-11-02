@@ -89,9 +89,9 @@ class ConnectionManager:
 					await connection.close(code=status.WS_1008_POLICY_VIOLATION)
 					return
 				else:
-					player = {}
-					player["nickName"] = player.nickName
-					player["Color"] = player.color.color_id
+					playerjson = {}
+					playerjson["nickName"] = player.nickName
+					playerjson["Color"] = player.color.color_id
 					player_list.append(player)
 		return player_list
 		
