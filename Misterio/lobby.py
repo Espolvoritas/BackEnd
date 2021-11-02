@@ -223,3 +223,4 @@ async def pickColor(player_id: int = Body(...), color: int = Body(...)):
 		else:
 			player.setColor(chosen_color)
 			await manager.lobby_broadcast(get_colors(lobby.game_id), lobby.game_id)
+			await manager.lobby_broadcast(await manager.getPlayers(lobby.game_id), lobby.game_id)
