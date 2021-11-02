@@ -1,5 +1,5 @@
 from pony.orm import Database, PrimaryKey, Optional, Set, Required
-from pony.orm import select
+from pony.orm import select, db_session
 from random import shuffle, choice
 from enum import Enum
 
@@ -79,3 +79,10 @@ def clear_tables():
     db.drop_table(db.Game, if_exists=True, with_all_data=True)
     db.drop_table(db.Color, if_exists=True, with_all_data=True)
     db.create_tables()
+
+clear_tables()
+#Colors shouldn't be modified outside this session
+with db_session:
+    for color in ColorCode:
+        color = Color(color=color.name)
+
