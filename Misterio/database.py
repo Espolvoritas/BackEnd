@@ -4,14 +4,40 @@ from pony.orm import select
 from random import shuffle
 from collections import defaultdict
 from itertools import product
+from enum import Enum
 
 db = Database()
 
-class Card(db.Entity):
-    cardId = PrimaryKey(int, auto=True)
-    player = Optional("Player", reverse="cards")
-    cardType = Optional(str)
-    cardName = Optional(str)
+class Card(Enum):
+    pass
+
+class Monster(Card):
+    Jekyll = 'Dr. Jekyll Mr. Hyde'
+    Dracula = 'Dracula'
+    Ghost = 'Fantasma'
+    Frankenstein = 'Frankenstein'
+    Werewolf = 'Hombre Lobo'
+    Mummy = 'Momia'
+
+
+class Victim(Card):
+    Housekeeper = 'Ama de Llaves'
+    Count = 'Conde'
+    Countess = 'Condesa'
+    Maiden = 'Doncella'
+    Gardener = 'Jardinero'
+    Butler = 'Mayordomo'
+
+
+class Room(Card):
+    Bedroom = 'Alcoba'
+    Library = 'Biblioteca'
+    Cellar = 'Bodega'
+    Carport = 'Cochera'
+    Laboratory = 'Laboratorio'
+    Pantheon = 'Panteon'
+    Hall = 'Salon'
+    Lobby = 'Vestibulo'
 
 
 class Game(db.Entity):
@@ -55,6 +81,7 @@ class Player(db.Entity):
     previousPlayer = Optional('Player', reverse="nextPlayer")
     currentDiceRoll = Optional(int)
 
+    cards = Set(Card)
     location = Optional("Cell", reverse="occupiers")
     trapped = Optional(bool)
     inRoom = Optional(bool)
