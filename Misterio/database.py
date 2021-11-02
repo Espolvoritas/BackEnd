@@ -36,7 +36,6 @@ class Game(db.Entity):
     playerCount = Required(int, default=0)
     isStarted = Required(bool)
 
-    color = Optional(str)
     culprit = Optional(str)
     room = Optional(str)
     victim = Optional(str)
