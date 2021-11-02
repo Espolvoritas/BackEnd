@@ -195,3 +195,22 @@ async def joinGame(gameId: int = Body(...), playerNickname: str = Body(...)):
 
         else:
             raise HTTPException(status_code=400, detail="Unexpected code reached")
+
+@game.put("/pickColor")
+async def pickColor(player_id: int = Body(...), color: int = Body(...)):
+	with db_session:
+		player = db.Player.get(player_id=player_id)
+		lobby = db.Game.get(game_id=player.lobby.game_id)
+		chosen_color = db.Color.get(color_id=color)
+		colors = lobby.getAvailableColors()
+		if chosen_color not in colors:
+			raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Color doesn't exists or is already in use")
+		else:
+			player.setColor(chosen_color)
+			new_colors = lobby.getAvailableColors()
+			color_list = []
+			for c in new_colors:
+				colorResponse = {}
+				colorResponse["color_id"] = c.color_id
+				colorResponse["colorName"] = c.colorName
+			await manager.lobby_broadcast(colorResponse, lobby.game_id)
