@@ -35,7 +35,8 @@ class Game(db.Entity):
             self.players.add(player)
             self.playerCount += 1   
         colors = self.getAvailableColors()
-        player.setColor(choice(colors))
+        if colors:
+            player.setColor(choice(colors))
         
     def getPlayers(self):
         return select(p for p in self.players)
