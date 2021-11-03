@@ -28,7 +28,7 @@ class Game(db.Entity):
     players = Set('Player', reverse='lobby')
     currentPlayer = Optional('Player', reverse="currentPlayerOf")
     playerCount = Required(int, default=0)
-    isStarted = Required(bool)
+    isStarted = Required(bool, default=False)
 
     def addPlayer(self, player):
         if (self.playerCount <= 6):
