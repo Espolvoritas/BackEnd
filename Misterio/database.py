@@ -91,8 +91,3 @@ def clear_tables():
     fillColors()
 
 clear_tables()
-#Colors shouldn't be modified outside this session
-with db_session:
-    for color in ColorCode:
-        color = Color(colorName=color.name)
-
