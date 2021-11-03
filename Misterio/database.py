@@ -74,11 +74,20 @@ class Player(db.Entity):
 db.bind('sqlite', 'database.sqlite', create_db=True)  # Connect object `db` with database.
 db.generate_mapping(create_tables=True)  # Generate database
 
+# Functions to test and fill database
+
+def fillColors():
+    #Colors shouldn't be modified outside this session
+    with db_session:
+        for color in ColorCode:
+            color = Color(colorName=color.name)
+
 def clear_tables():
     db.drop_table(db.Player, if_exists=True, with_all_data=True)
     db.drop_table(db.Game, if_exists=True, with_all_data=True)
     db.drop_table(db.Color, if_exists=True, with_all_data=True)
     db.create_tables()
+    fillColors()
 
 clear_tables()
 #Colors shouldn't be modified outside this session
