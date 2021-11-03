@@ -136,6 +136,10 @@ class Game(db.Entity):
         colors = list(select(c for c in db.Color if c not in player_colors))
         return colors
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 58210dd... Add Color, Card and Cell entity models
 class Player(db.Entity):
     player_id = PrimaryKey(int, auto=True) 
     nickName = Required(str)
@@ -158,6 +162,9 @@ class Player(db.Entity):
     #location = Optional("Cell", reverse="occupiers")
     trapped = Optional(bool)
     inRoom = Optional(bool)
+
+    def setColor(self, color):
+        self.color = color
 
     def setNext(self, nextPlayer):
         self.nextPlayer = nextPlayer
@@ -208,6 +215,7 @@ class Cell(db.Entity):
             current = list(reachable)
             new = []
 
+<<<<<<< HEAD
             while current:
 
                 for c, d in current:
@@ -229,10 +237,22 @@ class Cell(db.Entity):
 
 =======
 >>>>>>> ad7ad42... Remove Cell and Neighbor
+=======
+class Cell(db.Entity):
+    cellId = PrimaryKey(int, auto=True)
+    game = Optional(Game, reverse="board")
+    occupiers = Optional(Player, reverse="location")
+    neighbors = Set("Cell", reverse="neighbors")
+    freeNeighbors = Set("Cell", reverse="freeNeighbors")
+    isTrap = Optional(bool)
+
+
+>>>>>>> 58210dd... Add Color, Card and Cell entity models
 db.bind('sqlite', 'database.sqlite', create_db=True)  # Connect object `db` with database.
 db.generate_mapping(create_tables=True)  # Generate database
 
 # Functions to test and fill database
+<<<<<<< HEAD
 def fillCards():
     with db_session:
         for card in Monster:
@@ -241,6 +261,17 @@ def fillCards():
             Card(cardName=card.name, cardType="Victim")
         for card in Room:
             Card(cardName=card.name, cardType="Room")
+=======
+
+def fillCards():
+    with db_session:
+        for card in Monster:
+            monster = Card(cardName=card.name, cardType="Monster")
+        for card in Victim:
+            victim = Card(cardName=card.name, cardType="Victim")
+        for card in Room:
+            room = Card(cardName=card.name, cardType="Room")
+>>>>>>> 58210dd... Add Color, Card and Cell entity models
 
 def fillCards():
     with db_session:
@@ -257,6 +288,7 @@ def fillColors():
         for color in ColorCode:
             color = Color(colorName=color.name)
 
+<<<<<<< HEAD
 def fillCells():
     roomNames = [r.name for r in Room]
 
@@ -302,3 +334,14 @@ def clear_tables():
     fillCells()
 
 clear_tables()
+=======
+def clear_tables():
+    db.drop_table(db.Player, if_exists=True, with_all_data=True)
+    db.drop_table(db.Game, if_exists=True, with_all_data=True)
+    db.drop_table(db.Color, if_exists=True, with_all_data=True)
+    db.create_tables()
+    fillColors()
+    fillCards()
+
+clear_tables()
+>>>>>>> 58210dd... Add Color, Card and Cell entity models
