@@ -228,15 +228,6 @@ class Cell(db.Entity):
 
             return reachable
 
-class Cell(db.Entity):
-    cellId = PrimaryKey(int, auto=True)
-    game = Optional(Game, reverse="board")
-    occupiers = Optional(Player, reverse="location")
-    neighbors = Set("Cell", reverse="neighbors")
-    freeNeighbors = Set("Cell", reverse="freeNeighbors")
-    isTrap = Optional(bool)
-
-
 db.bind('sqlite', 'database.sqlite', create_db=True)  # Connect object `db` with database.
 db.generate_mapping(create_tables=True)  # Generate database
 
