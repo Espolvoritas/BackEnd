@@ -36,7 +36,7 @@ def startGame_post(userID, client: TestClient):
 	return client.post("/lobby/startGame",
 				headers={"accept": "application/json",
 				"Content-Type" : "application/json"},
-				json={"userID": userID}
+				json=f'{userID}'
 				)
 
 def pickColor_put(userID: int, color: int , client: TestClient):
