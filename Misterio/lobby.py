@@ -180,6 +180,7 @@ async def startGame(userID: int = Body(...)):
 		else:
 			lobby.isStarted = True
 			lobby.sortPlayers()
+			lobby.shuffleDeck()
 			await manager.lobby_broadcast("STATUS_GAME_STARTED", lobby.game_id)
 	return {}
 
