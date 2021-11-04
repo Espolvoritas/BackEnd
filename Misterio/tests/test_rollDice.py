@@ -3,9 +3,9 @@ from pony.orm import db_session, flush
 import string
 import logging
 import random
-from functions import *
-import database as db
-from server import app
+from Misterio.functions import *
+from Misterio.server import app
+import Misterio.database as db
 
 client = TestClient(app)
 logger = logging.getLogger("gameboard")
@@ -16,6 +16,7 @@ def test_send_one_roll():
 	game_id = create_game_post(host, client).json()['game_id']
 	expectedPlayers = create_players(1, game_id)
 	expectedPlayers.insert(0,host)
+	
 	with client.websocket_connect("/lobby/1") as websocket1, \
 		client.websocket_connect("/lobby/2") as websocket2:
 		try:
@@ -27,6 +28,7 @@ def test_send_one_roll():
 				assert player['nickName'] == expected
 
 			response = startGame_post(1, client)
+			print(response)
 			assert response.status_code == 200
 			websocket2.close()
 			data = websocket1.receive_json()

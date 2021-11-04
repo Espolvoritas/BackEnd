@@ -4,7 +4,7 @@ from pony.orm import db_session
 import string    
 import random # define the random module  
 import pytest
-from functions import *
+from Misterio.functions import *
 
 from Misterio.server import app
 import Misterio.database as db
@@ -77,3 +77,11 @@ def test_startGame_not_host():
 		except KeyboardInterrupt:
 			websocket2.close()
 			websocket1.close
+
+def test_startGame_no_lobby():
+	db.clear_tables()
+	with db_session:
+		hostName = get_random_string(6)
+		host = db.Player(nickName=hostName)
+	response = startGame_post(host.player_id, client)
+	assert response.status_code == 400

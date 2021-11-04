@@ -6,8 +6,6 @@ import pytest
 import random # define the random module  
 from fastapi import WebSocketDisconnect
 from Misterio.functions import *
-from time import sleep
-
 from Misterio.server import app
 import Misterio.database as db
 
@@ -75,7 +73,6 @@ def test_change_color():
 		assert color1 not in data['colors']
 		assert color2 in data['colors']
 		with client.websocket_connect("/lobby/2") as websocket2:
-			
 			try:
 				data1 = websocket1.receive_json()
 				assert color1 not in data1['colors']
