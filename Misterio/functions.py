@@ -2,7 +2,7 @@ import string
 import random
 from pony.orm import db_session
 from fastapi.testclient import TestClient
-import database as db
+import Misterio.database as db
 
 #aux function for getting random strings
 def get_random_string(length):
