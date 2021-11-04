@@ -101,7 +101,7 @@ class ConnectionManager:
 manager = ConnectionManager()
 
 def get_colors(gameId):
-	with db_session:
+	with db_session(optimistic=False):
 		lobby = db.Game.get(game_id=gameId)
 		if lobby:
 			flush()
@@ -173,10 +173,10 @@ async def startGame(userID: int = Body(...)):
 	with db_session:
 		host = db.Player.get(player_id=userID)
 		lobby = host.lobby
+		if lobby is None:
+			raise HTTPException(status_code=400, detail="Lobby does not exists")	
 		if lobby.host != host:
 			raise HTTPException(status_code=403, detail="Only host can start game")
-		if lobby is None:
-			raise HTTPException(status_code=400, detail="Lobby does not exist")
 		if lobby.playerCount < 2:
 			raise HTTPException(status_code=405, detail="Not enough players")
 		else:
