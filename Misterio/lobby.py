@@ -101,7 +101,7 @@ class ConnectionManager:
 manager = ConnectionManager()
 
 def get_colors(gameId):
-	with db_session(optimistic=False):
+	with db_session:
 		lobby = db.Game.get(game_id=gameId)
 		if lobby:
 			flush()

@@ -21,7 +21,7 @@ def test_joinColors():
 	with client.websocket_connect("/lobby/1") as websocket1, \
 		client.websocket_connect("/lobby/2") as websocket2:
 		try:
-			with db_session(optimistic=False):
+			with db_session:
 				player1 = db.Player.get(nickName=expectedPlayers[0])
 				player2 = db.Player.get(nickName=expectedPlayers[1])
 
@@ -62,7 +62,7 @@ def test_change_color():
 	with client.websocket_connect("/lobby/1") as websocket1:
 		expectedPlayers = create_players(1,game_id)
 		expectedPlayers.insert(0,host)
-		with db_session(optimistic=False):
+		with db_session:
 				player1 = db.Player.get(nickName=expectedPlayers[0])
 				player2 = db.Player.get(nickName=expectedPlayers[1])
 				player1id = player1.player_id
@@ -132,7 +132,7 @@ def test_taken_color():
 	with client.websocket_connect("/lobby/1") as websocket1:
 		expectedPlayers = create_players(1,game_id)
 		expectedPlayers.insert(0,host)
-		with db_session(optimistic=False):
+		with db_session:
 				player1 = db.Player.get(nickName=expectedPlayers[0])
 				player2 = db.Player.get(nickName=expectedPlayers[1])
 				player1id = player1.player_id
