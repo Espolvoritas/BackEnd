@@ -47,6 +47,11 @@ def player_in_turn(userID: int):
 	lobby = player.lobby
 	return userID == lobby.currentPlayer.player_id
 
+@db_session
+def get_card_list(userID: int):
+	cards = list(db.Player.get(player_id=userID).cards)
+	return list(c.cardId for c in cards)
+
 @gameBoard.websocket("/gameBoard/{userID}")
 async def handleTurn(websocket: WebSocket, userID: int):
 	
@@ -143,35 +148,3 @@ async def checkSuspicion_players(players: list, suspicion: list, lobbyId: int):
 	
 	responseMessage = {'status': 'SUSPICION_RESPONDED', 'args': [suspicionCard]}
 	return responseMessage
-
-
-@gameBoard.websocket("/gameBoard/{userID}")
-async def handleTurn(websocket: WebSocket, userID: int):
-	await gameBoard_manager.connect(websocket, userID)
-	with db_session:
-		player = db.Player.get(player_id=userID)
-		lobby = player.lobby
-		responseMessage = {'status':'PLAYERINTURN', 'args':[lobby.currentPlayer.nickName]}
-		await gameBoard_manager.send_personal_message(responseMessage, websocket)
-	try:
-		while(True):
-			message = await websocket.receive_json()
-
-			if message['status'] == 'SUSPICION':
-				suspicion = message['args']
-				suspicionResponse = await check_suspicion(userID, suspicion)
-				await gameBoard_manager.send_personal_message(suspicionResponse, websocket)
-				responseMessage = {'status':'PLAYERINTURN', 'args':[get_next_turn(lobby.game_id)]}
-				await gameBoard_manager.lobby_broadcast(responseMessage, lobby.game_id)
-
-			if message['status'] == 'DICEROLL':
-				roll = message['args'].pop()
-				if player_in_turn(userID):
-					with db_session:
-						player = db.Player.get(player_id=userID)
-						player.currentDiceRoll = int(roll)
-				responseMessage = {'status':'PLAYERINTURN', 'args':[get_next_turn(lobby.game_id)]}
-				await gameBoard_manager.lobby_broadcast(responseMessage, lobby.game_id)
-	except WebSocketDisconnect:
-		gameBoard_manager.disconnect(websocket, lobby.game_id)
-		await gameBoard_manager.lobby_broadcast(await gameBoard_manager.getPlayers(lobby.game_id), lobby.game_id)
