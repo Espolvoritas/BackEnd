@@ -224,16 +224,5 @@ async def pickColor(player_id: int = Body(...), color: int = Body(...)):
 			raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Color doesn't exists or is already in use")
 		else:
 			player.setColor(chosen_color)
-<<<<<<< HEAD
 			flush()
 			await manager.lobby_broadcast(await manager.getPlayers(lobby.game_id), lobby.game_id)
-=======
-			new_colors = lobby.getAvailableColors()
-			color_list = []
-			colorResponse = {}
-			for c in new_colors:
-				color_list.append(c.color_id)
-			colorResponse["Code"] = "STATUS_COLOR_LIST"
-			colorResponse["colors"] = color_list
-			await manager.lobby_broadcast(colorResponse, lobby.game_id)
->>>>>>> da3db6b... broadcast available colors to all players
