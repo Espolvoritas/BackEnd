@@ -39,3 +39,6 @@ def test_card_existence():
             foundCards.add(c.cardName)
 
         assert(allCardNames == foundCards)
+
+def test_card_dealing():
+    pass

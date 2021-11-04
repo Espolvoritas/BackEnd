@@ -133,9 +133,15 @@ class Player(db.Entity):
 
 
 class Cell(db.Entity):
+    # neighbors stores the set of immediately adjacent cells
+    # which require players to spend a move
+    # freeNeighbors stores the set of adjacent cells which
+    # do not require players to spend a move (for instance,
+    # moving to a trap from another is a "free" move, or from
+    # a room entrance to the room it leads to)
     cellId = PrimaryKey(int, auto=True)
     game = Optional(Game, reverse="board")
-    occupiers = Optional(Player, reverse="location") # Deberia ser un Set
+    occupiers = Set(Player, reverse="location")
     neighbors = Set("Cell", reverse="neighbors")
     freeNeighbors = Set("Cell", reverse="freeNeighbors")
     isTrap = Optional(bool)
