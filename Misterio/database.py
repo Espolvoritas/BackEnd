@@ -67,6 +67,9 @@ class Card(db.Entity):
     def isRoom(self):
         return self.cardType == "Room"
 
+    def assign(self, player):
+        player.cards.add(self)
+
 
 class Game(db.Entity):
     game_id = PrimaryKey(int, auto=True) 
@@ -132,7 +135,7 @@ class Player(db.Entity):
 class Cell(db.Entity):
     cellId = PrimaryKey(int, auto=True)
     game = Optional(Game, reverse="board")
-    occupiers = Optional(Player, reverse="location")
+    occupiers = Optional(Player, reverse="location") # Deberia ser un Set
     neighbors = Set("Cell", reverse="neighbors")
     freeNeighbors = Set("Cell", reverse="freeNeighbors")
     isTrap = Optional(bool)
@@ -146,11 +149,11 @@ db.generate_mapping(create_tables=True)  # Generate database
 def fillCards():
     with db_session:
         for card in Monster:
-            monster = Card(cardName=card.name, cardType="Monster")
+            Card(cardName=card.name, cardType="Monster")
         for card in Victim:
-            victim = Card(cardName=card.name, cardType="Victim")
+            Card(cardName=card.name, cardType="Victim")
         for card in Room:
-            room = Card(cardName=card.name, cardType="Room")
+            Card(cardName=card.name, cardType="Room")
 
 def fillColors():
     #Colors shouldn't be modified outside this session
