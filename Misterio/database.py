@@ -92,6 +92,16 @@ class Game(db.Entity):
     def getPlayers(self):
         return select(p for p in self.players)
 
+    def fillEnvelope(self):
+        #Get the available cards
+        victimCards = select(c for c in db.Card if c.cardType == "Victim")
+        monsterCards = select(c for c in db.Card if c.cardType == "Monster")
+        roomCards = select(c for c in db.Card if c.cardType == "Room")
+        # Fill the "Misterio" envelope
+        self.culprit=choice(list(monsterCards))
+        self.room=choice(list(roomCards))
+        self.victim=choice(list(victimCards))
+
     def sortPlayers(self):
         '''Assign each player who joined the game a `.nextPlayer` randomly.'''
         shuffledPlayers = list([p for p in self.players])
