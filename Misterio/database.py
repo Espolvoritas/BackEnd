@@ -1,5 +1,5 @@
 from pony.orm import Database, PrimaryKey, Optional, Set, Required
-from pony.orm import select, db_session, flush
+from pony.orm import select, db_session, flush, count
 from random import shuffle, choice
 from enum import Enum
 
@@ -111,7 +111,9 @@ class Game(db.Entity):
         for card in availableCards:
             player.cards.add(card)
             player = player.nextPlayer
-        self.currentPlayer = player
+        minCards = count(player.cards)
+        players = select(p for p in self.players if count(p.cards) == minCards)
+        self.currentPlayer = choice(players)
 
     def sortPlayers(self):
         '''Assign each player who joined the game a `.nextPlayer` randomly.'''
