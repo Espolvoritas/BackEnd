@@ -3,15 +3,9 @@ import string
 import random # define the random module  
 
 from Misterio.server import app
+from Misterio.functions import *
 
 client = TestClient(app)
-
-#aux function for getting random strings
-def get_random_string(length):
-    # choose from all lowercase letter
-    letters = string.ascii_lowercase
-    result_str = ''.join(random.choice(letters) for i in range(length))
-    return result_str
 
 def test_create_new_game():
     response = client.post("/lobby/createNew",
