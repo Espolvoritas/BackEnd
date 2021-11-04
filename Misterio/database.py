@@ -112,7 +112,7 @@ class Game(db.Entity):
             player.cards.add(card)
             player = player.nextPlayer
         minCards = count(player.cards)
-        players = select(p for p in self.players if count(p.cards) == minCards)
+        players = list(select(p for p in self.players if count(p.cards) == minCards))
         self.currentPlayer = choice(players)
 
     def sortPlayers(self):
