@@ -89,6 +89,11 @@ def player_in_turn(userID: int):
 	lobby = player.lobby
 	return userID == lobby.currentPlayer.player_id
 
+@db_session
+def get_card_list(userID: int):
+	cards = list(db.Player.get(player_id=userID).cards)
+	return list(c.cardId for c in cards)
+
 @gameBoard.websocket("/gameBoard/{userID}")
 async def handleTurn(websocket: WebSocket, userID: int):
 	
