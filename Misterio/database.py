@@ -103,6 +103,7 @@ class Game(db.Entity):
         self.victim=choice(list(victimCards))
 
     def shuffleDeck(self):
+        self.fillEnvelope()
         envelope = select((g.victim,g.culprit,g.room) for g in Game if g.game_id == self.game_id)
         availableCards = list(select(c for c in db.Card if c not in envelope.first()))
         shuffle(availableCards)
