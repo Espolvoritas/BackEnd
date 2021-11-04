@@ -1,5 +1,5 @@
 from pony.orm import Database, PrimaryKey, Optional, Set, Required
-from pony.orm import select, db_session
+from pony.orm import select, db_session, flush
 from random import shuffle, choice
 from enum import Enum
 
@@ -102,6 +102,16 @@ class Game(db.Entity):
         self.room=choice(list(roomCards))
         self.victim=choice(list(victimCards))
 
+    def shuffleDeck(self):
+        envelope = select((g.victim,g.culprit,g.room) for g in Game if g.game_id == self.game_id)
+        availableCards = list(select(c for c in db.Card if c not in envelope.first()))
+        shuffle(availableCards)
+        player = self.currentPlayer
+        for card in availableCards:
+            player.cards.add(card)
+            player = player.nextPlayer
+        self.currentPlayer = player
+
     def sortPlayers(self):
         '''Assign each player who joined the game a `.nextPlayer` randomly.'''
         shuffledPlayers = list([p for p in self.players])
@@ -168,8 +178,10 @@ def fillColors():
             color = Color(colorName=color.name)
 
 def clear_tables():
+    db.Player.cards.drop_table(with_all_data=True)
     db.drop_table(db.Player, if_exists=True, with_all_data=True)
     db.drop_table(db.Game, if_exists=True, with_all_data=True)
+    db.drop_table(db.Card, if_exists=True, with_all_data=True)
     db.drop_table(db.Color, if_exists=True, with_all_data=True)
     db.create_tables()
     fillColors()
