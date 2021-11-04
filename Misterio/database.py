@@ -164,6 +164,7 @@ def fillColors():
 def clear_tables():
     db.drop_table(db.Player, if_exists=True, with_all_data=True)
     db.drop_table(db.Game, if_exists=True, with_all_data=True)
+    db.drop_table(db.Card, if_exists=True, with_all_data=True)
     db.drop_table(db.Color, if_exists=True, with_all_data=True)
     db.create_tables()
     fillColors()
