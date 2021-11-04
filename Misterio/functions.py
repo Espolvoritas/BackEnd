@@ -32,7 +32,7 @@ def create_game_post(nickName: str, client: TestClient):
 				json={"name": get_random_string(6), "host": nickName}
 				)
 
-def startGame_post(userID, client: TestClient):
+def startGame_post(userID: int, client: TestClient):
 	return client.post("/lobby/startGame",
 				headers={"accept": "application/json",
 				"Content-Type" : "application/json"},
