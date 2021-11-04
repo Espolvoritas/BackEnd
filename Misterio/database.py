@@ -145,6 +145,8 @@ class Cell(db.Entity):
     neighbors = Set("Cell", reverse="neighbors")
     freeNeighbors = Set("Cell", reverse="freeNeighbors")
     isTrap = Optional(bool)
+    isRoom = Optional(bool)
+    roomName = Optional(str)
 
 
 db.bind('sqlite', 'database.sqlite', create_db=True)  # Connect object `db` with database.
@@ -172,6 +174,7 @@ def clear_tables():
     db.drop_table(db.Game, if_exists=True, with_all_data=True)
     db.drop_table(db.Card, if_exists=True, with_all_data=True)
     db.drop_table(db.Color, if_exists=True, with_all_data=True)
+    db.drop_table(db.Cell, if_exists=True, with_all_data=True)
     db.create_tables()
     fillColors()
     fillCards()
