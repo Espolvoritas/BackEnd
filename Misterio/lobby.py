@@ -80,6 +80,7 @@ class ConnectionManager:
 
 	async def getPlayers(self, lobbyID: int):
 		player_list = []
+		colors = get_colors(lobbyID)
 		response = {}
 		if lobbyID in self.active_lobbys.keys():
 			for connection in self.active_lobbys[lobbyID]:
@@ -94,23 +95,20 @@ class ConnectionManager:
 					playerjson["nickName"] = player.nickName
 					playerjson["Color"] = player.color.color_id
 					player_list.append(playerjson)
-			response['colors'] = get_colors(lobbyID)
-			response['players'] = player_list
+		response['colors'] = colors
+		response['players'] = player_list
 		return response
 		
 manager = ConnectionManager()
 
 def get_colors(gameId):
+	color_list = []
 	with db_session:
 		lobby = db.Game.get(game_id=gameId)
 		if lobby:
-			flush()
-			new_colors = lobby.getAvailableColors()
-		else:
-			return []
-	color_list = []
-	for c in new_colors:
-		color_list.append(c.color_id)
+			color_query = lobby.getAvailableColors()
+			for c in color_query:
+				color_list.append(c.color_id)
 	return color_list
 
 @game.post("/createNew", status_code=status.HTTP_201_CREATED)
