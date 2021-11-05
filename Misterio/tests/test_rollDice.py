@@ -47,10 +47,11 @@ def test_send_one_roll():
 	with client.websocket_connect("/gameBoard/" + str(current_player.player_id)) as websocket1:
 		try:
 			data = websocket1.receive_json()
+			print(data)
 			assert current_player_nickName == data['currentPlayer']
 			websocket1.send_text(roll)
 			data = websocket1.receive_json()
-			assert next_player == data
+			assert next_player == data['currentPlayer']
 			websocket1.close()
 		except KeyboardInterrupt:
 			websocket1.close()
