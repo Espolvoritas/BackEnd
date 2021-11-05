@@ -2,6 +2,7 @@ from fastapi import APIRouter, status, WebSocket, WebSocketDisconnect
 from pony.orm import db_session
 
 import Misterio.database as db
+from Misterio.constants import *
 from Misterio.lobby import ConnectionManager
 
 gameBoard = APIRouter(prefix="/gameBoard")
@@ -32,8 +33,8 @@ async def handleTurn(websocket: WebSocket, userID: int):
 	with db_session:
 		player = db.Player.get(player_id=userID)
 		lobby = player.lobby
-		await gameBoard_manager.send_personal_message({"currentPlayer" : lobby.currentPlayer.nickName,
-		"cards" : get_card_list(userID)}, websocket)
+		await gameBoard_manager.send_personal_message({"code" : WS_CURR_PLAYER + WS_CARD_LIST ,
+		"currentPlayer" : lobby.currentPlayer.nickName, "cards" : get_card_list(userID)}, websocket)
 	try:
 		while(True):
 			roll = await websocket.receive_text()
