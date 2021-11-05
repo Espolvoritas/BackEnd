@@ -62,19 +62,12 @@ async def handleTurn(websocket: WebSocket, userID: int):
 		await gameBoard_manager.connect(websocket, userID)
 		await gameBoard_manager.send_personal_message(responseMessage, websocket)
 		while(True):
-			message = await websocket.receive_json()
-
-			if message['status'] == 'PICK_CARD':
-				gameBoard_manager.pickedCard_id = message['args'].pop()
-
-			if message['status'] == 'DICEROLL':
-				roll = message['args'].pop()
-				if player_in_turn(userID):
-					with db_session:
-						player = db.Player.get(player_id=userID)
-						player.currentDiceRoll = int(roll)
-				responseMessage = {'status':'PLAYERINTURN', 'args':[get_next_turn(lobby.game_id)]}
-				await gameBoard_manager.lobby_broadcast(responseMessage, lobby.game_id)
+			roll = await websocket.receive_text()
+			if player_in_turn(userID):
+				with db_session:
+					player = db.Player.get(player_id=userID)
+					player.currentDiceRoll = int(roll)
+				await gameBoard_manager.lobby_broadcast({"code" : WS_CURR_PLAYER, "currentPlayer" : get_next_turn(lobby.game_id)}, lobby.game_id)
 	except WebSocketDisconnect:
 		gameBoard_manager.disconnect(websocket, lobby.game_id)
 		await gameBoard_manager.lobby_broadcast(await gameBoard_manager.getPlayers(lobby.game_id), lobby.game_id)
