@@ -153,6 +153,7 @@ class Player(db.Entity):
     nickName = Required(str)
     hostOf = Optional(Game)
     lobby = Optional(Game)
+    alive = Required(bool, default=True)
     currentPlayerOf = Optional(Game, reverse="currentPlayer")
     nextPlayer = Optional('Player', reverse="previousPlayer")
     previousPlayer = Optional('Player', reverse="nextPlayer")
@@ -176,6 +177,9 @@ class Player(db.Entity):
 
     def setNext(self, nextPlayer):
         self.nextPlayer = nextPlayer
+
+    def commitDie(self):
+        self.alive=False
 
 class Cell(db.Entity):
     # The neighbors field stores the set of immediately adjacent cells
