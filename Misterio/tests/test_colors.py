@@ -140,35 +140,35 @@ def test_taken_color():
 				color1, color2 = player1.color.color_id, player2.color.color_id
 				expected_colors = [color1, color2]
 		data = websocket1.receive_json()
-		assert color1 not in data['colors']
-		assert color2 in data['colors']
+		assert (color1 not in data['colors'])
+		assert (color2 in data['colors'])
 		with client.websocket_connect("/lobby/2") as websocket2:
 			
 			try:
 				data1 = websocket1.receive_json()
-				assert color1 not in data1['colors']
-				assert color2 not in data1['colors']
+				assert (color1 not in data1['colors'])
+				assert (color2 not in data1['colors'])
 
 				for player, expected, colors in zip(data['players'], expectedPlayers, expected_colors):
-					assert player['nickName'] == expected
-					assert player['Color'] == colors
+					assert (player['nickName'] == expected)
+					assert (player['Color'] == colors)
 
 				data2 = websocket2.receive_json()
-				assert color1 not in data2['colors']
-				assert color2 not in data2['colors']
-				assert data1 == data2
+				assert (color1 not in data2['colors'])
+				assert (color2 not in data2['colors'])
+				assert (data1 == data2)
 
 				for player, expected, colors in zip(data2['players'], expectedPlayers, expected_colors):
-					assert player['nickName'] == expected
-					assert player['Color'] == colors
+					assert (player['nickName'] == expected)
+					assert (player['Color'] == colors)
 
 				new_color1 = color2
 				response = pickColor_put(player1id, new_color1, client)
-				assert response.status_code == 400
+				assert (response.status_code == 400)
 
 				websocket2.close()
 				data = websocket1.receive_json()
-				assert color2 in data['colors']
+				assert (color2 in data['colors'])
 
 				websocket1.close()
 			except KeyboardInterrupt:
