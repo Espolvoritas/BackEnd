@@ -94,6 +94,20 @@ def get_card_list(userID: int):
 	cards = list(db.Player.get(player_id=userID).cards)
 	return list(c.cardId for c in cards)
 
+@gameBoard.post("/accuse")
+async def accuse(room: db.Room = Body(), culprit: db.Monster = Body(), victim: db.Victim = Body(), userID: int = Body(...)):
+	with db_session:
+		player = db.Player.get(player_id=userID)
+		if not player or not player.lobby or not player.alive:
+			raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="... why?")
+		lobby = player.lobby
+		if room == lobby.room and culprit == lobby.culprit and victim == lobby.victim:
+			await gameBoard_manager.lobby_broadcast("WEEEEEEEEEEE " + str(player.nickName) + " WOOOOOON")
+		else:
+			await gameBoard_manager.lobby_broadcast("Get a load of this guy" + str(player.nickName))
+			player.commitDie()
+
+
 @gameBoard.websocket("/gameBoard/{userID}")
 async def handleTurn(websocket: WebSocket, userID: int):
 	
