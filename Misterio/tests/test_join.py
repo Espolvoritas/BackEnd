@@ -1,18 +1,14 @@
 from fastapi.testclient import TestClient
 from pony.orm import db_session, flush
-
+import pytest
+from fastapi import WebSocketDisconnect
 from Misterio.server import app
 import Misterio.database as db
 
 client = TestClient(app)
 
-def clear_tables():
-    db.db.drop_table(db.Player, if_exists=True, with_all_data=True)
-    db.db.drop_table(db.Game, if_exists=True, with_all_data=True)
-    db.db.create_tables()
-
 def test_join():
-    clear_tables()
+    db.clear_tables()
 
     with db_session:
        
@@ -45,7 +41,7 @@ def test_join():
     print(response1)
     print(response2)
 
-    clear_tables()
+    db.clear_tables()
 
     assert response1.status_code == 400
     assert(response2["nicknameIsValid"] == True)

@@ -80,6 +80,8 @@ class ConnectionManager:
 
 	async def getPlayers(self, lobbyID: int):
 		player_list = []
+		colors = get_colors(lobbyID)
+		response = {}
 		if lobbyID in self.active_lobbys.keys():
 			for connection in self.active_lobbys[lobbyID]:
 				with db_session:
@@ -89,10 +91,25 @@ class ConnectionManager:
 					await connection.close(code=status.WS_1008_POLICY_VIOLATION)
 					return
 				else:
-					player_list.append(player.nickName)
-		return player_list
+					playerjson = {}
+					playerjson["nickName"] = player.nickName
+					playerjson["Color"] = player.color.color_id
+					player_list.append(playerjson)
+		response['colors'] = colors
+		response['players'] = player_list
+		return response
 		
 manager = ConnectionManager()
+
+def get_colors(gameId):
+	color_list = []
+	with db_session:
+		lobby = db.Game.get(game_id=gameId)
+		if lobby:
+			color_query = lobby.getAvailableColors()
+			for c in color_query:
+				color_list.append(c.color_id)
+	return color_list
 
 @game.post("/createNew", status_code=status.HTTP_201_CREATED)
 async def createNewGame(name: str = Body(...), host: str = Body(...)):
@@ -154,10 +171,10 @@ async def startGame(userID: int = Body(...)):
 	with db_session:
 		host = db.Player.get(player_id=userID)
 		lobby = host.lobby
+		if lobby is None:
+			raise HTTPException(status_code=400, detail="Lobby does not exists")	
 		if lobby.host != host:
 			raise HTTPException(status_code=403, detail="Only host can start game")
-		if lobby is None:
-			raise HTTPException(status_code=400, detail="Lobby does not exist")
 		if lobby.playerCount < 2:
 			raise HTTPException(status_code=405, detail="Not enough players")
 		else:
@@ -170,7 +187,6 @@ async def startGame(userID: int = Body(...)):
 async def joinGame(gameId: int = Body(...), playerNickname: str = Body(...)):
 
     with db_session:
-
         chosenGame = db.Game.get(game_id=gameId)
 
         if chosenGame is None:
@@ -195,3 +211,17 @@ async def joinGame(gameId: int = Body(...), playerNickname: str = Body(...)):
 
         else:
             raise HTTPException(status_code=400, detail="Unexpected code reached")
+
+@game.put("/pickColor")
+async def pickColor(player_id: int = Body(...), color: int = Body(...)):
+	with db_session:
+		player = db.Player.get(player_id=player_id)
+		lobby = db.Game.get(game_id=player.lobby.game_id)
+		chosen_color = db.Color.get(color_id=color)
+		colors = lobby.getAvailableColors()
+		if chosen_color not in colors:
+			raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Color doesn't exists or is already in use")
+		else:
+			player.setColor(chosen_color)
+			flush()
+			await manager.lobby_broadcast(await manager.getPlayers(lobby.game_id), lobby.game_id)
