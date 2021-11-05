@@ -65,6 +65,12 @@ class ConnectionManager:
 						db.Player.get(player_id=userID).delete()
 						game.playerCount -= 1
 
+	def get_websocket(self, playerId: int, lobbyId):
+		if lobbyId in self.active_lobbys.keys():
+			for connection in self.active_lobbys[lobbyId]:
+				if self.active_connections[connection] == playerId:
+					return connection
+
 	async def send_personal_message(self, message: List[str], websocket: WebSocket):
 		await websocket.send_json(message)
 
