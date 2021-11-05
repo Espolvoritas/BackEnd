@@ -56,8 +56,8 @@ async def handleTurn(websocket: WebSocket, userID: int):
 			await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
 			return
 		lobby = player.lobby
-		responseMessage = {'status':'PLAYERINTURN', 'args':[lobby.currentPlayer.nickName]}
-			
+		await gameBoard_manager.send_personal_message({"code" : WS_CURR_PLAYER + WS_CARD_LIST ,
+		"currentPlayer" : lobby.currentPlayer.nickName, "cards" : get_card_list(userID)}, websocket)
 	try:
 		await gameBoard_manager.connect(websocket, userID)
 		await gameBoard_manager.send_personal_message(responseMessage, websocket)
