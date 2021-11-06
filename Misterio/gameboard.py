@@ -93,6 +93,7 @@ def player_in_turn(userID: int):
 @db_session
 def get_card_list(userID: int):
 	cards = list(db.Player.get(player_id=userID).cards)
+	cards.sort()
 	return list(c.cardId for c in cards)
 
 @gameBoard.websocket("/gameBoard/{userID}")
