@@ -4,10 +4,33 @@ from pony.orm import db_session
 import Misterio.database as db
 from Misterio.constants import *
 from Misterio.lobby import ConnectionManager
+from fastapi import APIRouter, status, WebSocket, WebSocketDisconnect, Body
+import database as db
+from pony.orm import db_session
+from pony.orm import get as dbget
+from games import ConnectionManager
 
 gameBoard = APIRouter(prefix="/gameBoard")
 
 gameBoard_manager = ConnectionManager()
+
+def cellByCoordinates(x, y):
+	return dbget(c for c in db.Cell if c.x == x and c.y == y)
+
+@gameBoard.post("/moves", status_code=status.HTTP_201_CREATED)
+def get_moves(player_id: int = Body(...), x: int = Body(...), y: int = Body(...), cost: int = Body(...)):
+	moves = {"player_id": player_id, "options": []}
+	with db_session:
+		reachableCells = cellByCoordinates(x, y).getReachable(cost)
+
+		for cell, distance in reachableCells:
+			option = {"x": 0, "y": 0, "cost": 0}
+			option["x"] = cell.y
+			option["y"] = cell.x
+			option["cost"] = distance
+			moves["options"].append(option)
+
+		return moves
 
 @db_session
 def get_next_turn(lobbyID: int):
