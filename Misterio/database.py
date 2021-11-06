@@ -53,6 +53,9 @@ class Room(CardValue):
     HALL = 19
     GARAGE = 20
 
+# class Salem(CardValue):
+#    SALEM = 21
+
 class Card(db.Entity):
     cardId = PrimaryKey(int, auto=True)
     cardName = Optional(str)
