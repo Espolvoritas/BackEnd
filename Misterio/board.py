@@ -88,6 +88,11 @@ def makeBoard():
             if r[2] in e[2]:
                 freeNeighbors[e].add(r)
                 freeNeighbors[r].add(e)
+                
+    for (r, s) in combinations(rooms, 2):
+        if r[2] == s[2]:
+            freeNeighbors[r].add(s)
+            freeNeighbors[s].add(r)
 
     allCells, neighbors, freeNeighbors = indexedOnOne(allCells, neighbors, freeNeighbors)
     return allCells, neighbors, freeNeighbors
