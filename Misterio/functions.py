@@ -45,3 +45,10 @@ def pickColor_put(userID: int, color: int , client: TestClient):
 				"Content-Type" : "application/json"},
 				json={"player_id": userID, "color": color}
 				)
+
+def suspicion_post(userID: int, victimId: int, culpritId: int, client: TestClient):
+	return client.post("/gameBoard/checkSuspicion",
+				headers={"accept": "application/json",
+				"Content-Type" : "application/json"},
+				json={'playerId': userID, 'victimId': victimId, 'culpritId': culpritId}
+				)
