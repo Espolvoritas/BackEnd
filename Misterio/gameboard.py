@@ -1,5 +1,6 @@
-from fastapi import APIRouter, status, WebSocket, WebSocketDisconnect, HTTPException
+from fastapi import APIRouter, status, WebSocket, WebSocketDisconnect, HTTPException, Body
 from pony.orm import db_session, select
+from asyncio import sleep
 
 import Misterio.database as db
 from Misterio.constants import *
@@ -46,26 +47,58 @@ def player_in_turn(userID: int):
 	lobby = player.lobby
 	return userID == lobby.currentPlayer.player_id
 
-async def check_suspicion(playerId: int, suspicion):
-	suspicion = list(map(int, suspicion))
+@gameBoard.websocket("/gameBoard/{userID}")
+async def handleTurn(websocket: WebSocket, userID: int):
+	
+	with db_session:
+		player = db.Player.get(player_id=userID)
+		if player is None or player.lobby is None or gameBoard_manager.exists(userID):
+			await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+			return
+		lobby = player.lobby
+		responseMessage = {'status':'PLAYERINTURN', 'args':[lobby.currentPlayer.nickName]}
+			
+	try:
+		await gameBoard_manager.connect(websocket, userID)
+		await gameBoard_manager.send_personal_message(responseMessage, websocket)
+		while(True):
+			message = await websocket.receive_json()
+
+			if message['status'] == 'PICK_CARD':
+				gameBoard_manager.pickedCard_id = message['args'].pop()
+
+			if message['status'] == 'DICEROLL':
+				roll = message['args'].pop()
+				if player_in_turn(userID):
+					with db_session:
+						player = db.Player.get(player_id=userID)
+						player.currentDiceRoll = int(roll)
+				responseMessage = {'status':'PLAYERINTURN', 'args':[get_next_turn(lobby.game_id)]}
+				await gameBoard_manager.lobby_broadcast(responseMessage, lobby.game_id)
+	except WebSocketDisconnect:
+		gameBoard_manager.disconnect(websocket, lobby.game_id)
+		await gameBoard_manager.lobby_broadcast(await gameBoard_manager.getPlayers(lobby.game_id), lobby.game_id)
+
+@gameBoard.post("/checkSuspicion", status_code=status.HTTP_200_OK)
+async def check_suspicion(playerId: int = Body(...), victimId: int = Body(...), culpritId: int = Body(...)):
 	with db_session:
 		player = db.Player.get(player_id=playerId)
+		lobby = player.lobby
+		victim = db.Card.get(cardId=victimId)
+		culprit = db.Card.get(cardId=culpritId)
 		if player is None:
 			raise HTTPException(status_code=400, detail="Player does not exist")
-
-		lobby = player.lobby
 		if lobby is None:
 			raise HTTPException(status_code=403, detail="Player is not in game.")
 		if lobby.currentPlayer != player:
 			raise HTTPException(status_code=403, detail="Player can't make a suspicion outside his/her turn.")
 		if (not player.inRoom):
 			raise HTTPException(status_code=403, detail="Player must be in a room to make a suspicion.")
-		if (suspicion is None or len(suspicion) != 2):
-			raise HTTPException(status_code=403, detail="Suspicion must contain two cards.")
+		if (victim.cardType != "Victim" or culprit.cardType != "Monster"):
+			raise HTTPException(status_code=403, detail="Suspicion card types are invalid.")
 		else:
 			roomName = player.location.roomName
-			roomCard = select(c.cardId for c in db.Card if c.cardName == roomName)
-			suspicion.append(roomCard.first())
+			roomId = select(c.cardId for c in db.Card if c.cardName == roomName).first()
 			players = []
 			currplayerId = player.nextPlayer.player_id
 			for i in range(lobby.playerCount):
@@ -73,7 +106,12 @@ async def check_suspicion(playerId: int, suspicion):
 				currplayerCards = [c.cardId for c in currplayer.cards]
 				players.append([currplayer.player_id, currplayerCards])
 				currplayerId = currplayer.nextPlayer.player_id
-	players.reverse()
+			players.reverse()
+			suspicion = [culpritId, victimId, roomId]
+	suspicionCard = await checkSuspicion_players(players, suspicion, lobby.game_id)
+	return {'status': 'SUSPICION_RESPONDED', 'args': [suspicionCard]}
+
+async def checkSuspicion_players(players: list, suspicion: list, lobbyId: int):
 	responded = False
 	while (not responded or not players):
 		nextPlayer = players.pop()
@@ -81,7 +119,6 @@ async def check_suspicion(playerId: int, suspicion):
 		for card in suspicion:
 			if card in nextPlayer[1]:
 				matches.append(card)
-		print("Player beeing suspiced: ", nextPlayer[0], "Suspicion ", suspicion, "Cards: ", nextPlayer[1], "Matches: ", matches)
 		if matches:
 			if len(matches) > 1:
 				responseMessage = {'status': 'PICK_CARD', 'args': matches}
