@@ -5,10 +5,8 @@ import Misterio.database as db
 from Misterio.constants import *
 from Misterio.lobby import ConnectionManager
 from fastapi import APIRouter, status, WebSocket, WebSocketDisconnect, Body
-import database as db
 from pony.orm import db_session
 from pony.orm import get as dbget
-from games import ConnectionManager
 
 gameBoard = APIRouter(prefix="/gameBoard")
 
