@@ -8,9 +8,12 @@ from fastapi import APIRouter, status, WebSocket, WebSocketDisconnect, Body
 from pony.orm import db_session
 from pony.orm import get as dbget
 
+class GameBoardManager(ConnectionManager):
+	pickedCard_id = None 
+		
 gameBoard = APIRouter(prefix="/gameBoard")
 
-gameBoard_manager = ConnectionManager()
+gameBoard_manager = GameBoardManager()
 
 def cellByCoordinates(x, y):
 	return dbget(c for c in db.Cell if c.x == x and c.y == y)
@@ -82,16 +85,14 @@ async def check_suspicion(playerId: int, suspicion):
 		if matches:
 			if len(matches) > 1:
 				responseMessage = {'status': 'PICK_CARD', 'args': matches}
-				websocket = gameBoard_manager.get_websocket(nextPlayer[0], lobby.game_id)
+				websocket = gameBoard_manager.get_websocket(nextPlayer[0], lobbyId)
 				#Send next player the option to pick a card
 				await gameBoard_manager.send_personal_message(responseMessage, websocket)
-				responseData = None
-				while responseData is None:
+				while gameBoard_manager.pickedCard_id is None:
 					#Await for next player to pick a card to show (maybe implement timer)
-					responseData = await websocket.receive_json()
-					if responseData['status'] == 'PICK_CARD':
-						suspicionCard = responseData['args'].pop()
-					print("CHOICE RECEIVED: ", suspicionCard)
+					await sleep(1)
+				suspicionCard = gameBoard_manager.pickedCard_id
+				gameBoard_manager.pickedCard_id = None
 			else:
 				suspicionCard = matches.pop()
 			responded = True
