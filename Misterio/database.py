@@ -2,6 +2,10 @@ from pony.orm import Database, PrimaryKey, Optional, Set, Required
 from pony.orm import select, db_session, flush, count
 from random import shuffle, choice
 from enum import Enum
+from pony.orm import flush
+from random import shuffle, choice
+
+from board import makeBoard
 
 db = Database()
 
@@ -66,6 +70,9 @@ class Card(db.Entity):
 
     def isRoom(self):
         return self.cardType == "Room"
+
+    def assign(self, player):
+        player.cards.add(self)
 
 
 class Game(db.Entity):
@@ -150,20 +157,82 @@ class Player(db.Entity):
     def setNext(self, nextPlayer):
         self.nextPlayer = nextPlayer
 
-
 class Cell(db.Entity):
+    # The neighbors field stores the set of immediately adjacent cells
+    # which require players to spend a move when changing positions.
+    # freeNeighbors stores the set of adjacent cells which
+    # do not require players to spend a move (for instance,
+    # moving to a trap from another is a "free" move, same as moving from
+    # a room entrance to the room it leads to)
     cellId = PrimaryKey(int, auto=True)
     game = Optional(Game, reverse="board")
-    occupiers = Optional(Player, reverse="location")
-    neighbors = Set("Cell", reverse="neighbors")
-    freeNeighbors = Set("Cell", reverse="freeNeighbors")
+    occupiers = Set(Player, reverse="location")
+    neighbors = Set("Cell", reverse="neighborOf")
+    neighborOf = Set("Cell", reverse="neighbors")
+    freeNeighbors = Set("Cell", reverse="freeNeighborOf")
+    freeNeighborOf = Set("Cell", reverse="freeNeighbors")
     isTrap = Optional(bool)
+    isRoom = Optional(bool)
+    roomName = Optional(str)
+    x = Optional(int)
+    y = Optional(int)
+    cellType = Optional(str)
+
+    def getNeighbors(self):
+        return [c for c in self.neighbors]
+
+    def getFreeNeighbors(self):
+        return [c for c in self.freeNeighbors]
+
+    def isSpecial(self):
+        return self.cellType not in ["plain"] and "entrance" not in self.cellType
+
+    def getReachable(self, moves):
+
+        if moves == 0:
+            return [(fn, 0) for fn in self.getFreeNeighbors()]
+
+        if moves > 0:
+
+            reachable = [(n, moves-1) for n in self.getNeighbors()]
+            reachable = reachable + [(fn, moves) for fn in self.getFreeNeighbors()]
+
+            already = {e for e, c in reachable} | set([self])
+            special = {e for e, c in reachable if e.isSpecial()}
+            
+            current = list(reachable)
+            new = []
+
+            while current:
+
+                for c, d in current:
+                    if not c.isTrap:
+                        if d != 0:
+                            new = new + [(n, d-1) for n in c.getNeighbors() if n not in already]
+                        new = new + [(fn, d) for fn in c.getFreeNeighbors() if fn not in already]
+
+                reachable = reachable + list(new)
+                already = already | {c for c, d in new}
+                current = list(new)
+                new = list()
+
+            print(reachable)
+
+            return reachable
 
 
 db.bind('sqlite', 'database.sqlite', create_db=True)  # Connect object `db` with database.
 db.generate_mapping(create_tables=True)  # Generate database
 
 # Functions to test and fill database
+def fillCards():
+    with db_session:
+        for card in Monster:
+            Card(cardName=card.name, cardType="Monster")
+        for card in Victim:
+            Card(cardName=card.name, cardType="Victim")
+        for card in Room:
+            Card(cardName=card.name, cardType="Room")
 
 def fillCards():
     with db_session:
@@ -180,14 +249,48 @@ def fillColors():
         for color in ColorCode:
             color = Color(colorName=color.name)
 
+def fillCells():
+    roomNames = [r.name for r in Room]
+
+    cells, neighbors, freeNeighbors = makeBoard()
+    cellIndex = {}
+
+    with db_session:
+        for cx, cy, t in cells:
+            cellIndex[(cx, cy, t)] = Cell(x=cx, y=cy, cellType=t)
+
+            if t in roomNames:
+                cellIndex[(cx, cy, t)].roomName = t
+                cellIndex[(cx, cy, t)].cellType = "room"
+                cellIndex[(cx, cy, t)].isRoom = True
+            if "trap" in t:
+                cellIndex[(cx, cy, t)].isTrap = True
+
+
+        for c in cells:
+            for n in neighbors[c]:
+                cellIndex[c].neighbors.add(cellIndex[n])
+
+
+        for c in cells:
+            for fn in freeNeighbors[c]:
+                cellIndex[c].freeNeighbors.add(cellIndex[fn])
+        
+
+
 def clear_tables():
     db.Player.cards.drop_table(with_all_data=True)
+    db.Cell.neighbors.drop_table(with_all_data=True)
+    db.Cell.freeNeighbors.drop_table(with_all_data=True)
     db.drop_table(db.Player, if_exists=True, with_all_data=True)
     db.drop_table(db.Game, if_exists=True, with_all_data=True)
     db.drop_table(db.Card, if_exists=True, with_all_data=True)
     db.drop_table(db.Color, if_exists=True, with_all_data=True)
+    db.drop_table(db.Cell, if_exists=True, with_all_data=True)
+
     db.create_tables()
     fillColors()
     fillCards()
+    fillCells()
 
 clear_tables()
