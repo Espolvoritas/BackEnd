@@ -8,6 +8,7 @@ from Misterio.lobby import ConnectionManager
 from fastapi import APIRouter, status, WebSocket, WebSocketDisconnect, Body
 from pony.orm import db_session
 from pony.orm import get as dbget
+from starlette.responses import Response
 
 class GameBoardManager(ConnectionManager):
 	pickedCard_id = None 
