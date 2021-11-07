@@ -52,3 +52,10 @@ def suspicion_post(userID: int, victimId: int, culpritId: int, client: TestClien
 				"Content-Type" : "application/json"},
 				json={'playerId': userID, 'victimId': victimId, 'culpritId': culpritId}
 				)
+
+def rollDice_post(userID: int, roll: int, client: TestClient):
+	return client.post("/gameBoard/rollDice",
+				headers={"accept": "application/json",
+				"Content-Type" : "application/json"},
+				json={'playerId': userID, 'roll': roll}
+				)
