@@ -66,8 +66,6 @@ async def handleTurn(websocket: WebSocket, userID: int):
 			"currentPlayer" : lobby.currentPlayer.nickName, "cards" : get_card_list(userID)}, websocket)
 
 	try:
-		await gameBoard_manager.connect(websocket, userID)
-		await gameBoard_manager.send_personal_message(responseMessage, websocket)
 		while(True):
 			message = await websocket.receive_json()
 			
