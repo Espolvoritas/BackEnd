@@ -5,7 +5,7 @@ from enum import Enum
 from pony.orm import flush
 from random import shuffle, choice
 
-from board import makeBoard
+from Misterio.board import makeBoard
 
 db = Database()
 
