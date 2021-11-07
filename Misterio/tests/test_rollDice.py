@@ -28,7 +28,6 @@ def test_send_one_roll():
 				assert player['nickName'] == expected
 
 			response = startGame_post(1, client)
-			print(response)
 			assert response.status_code == 200
 			websocket2.close()
 			data = websocket1.receive_json()
@@ -43,18 +42,34 @@ def test_send_one_roll():
 	with db_session:
 		current_player = db.Game.get(game_id=game_id).currentPlayer
 		current_player_nickName = current_player.nickName
-		next_player = current_player.nextPlayer.nickName
+		next_player = current_player.nextPlayer
+
+	print(current_player)
 	with client.websocket_connect("/gameBoard/" + str(current_player.player_id)) as websocket1:
-		try:
-			data = websocket1.receive_json()
+		data = websocket1.receive_json()
+		print(data)
+		with client.websocket_connect("/gameBoard/" + str(next_player.player_id)) as websocket2:
+			#data = websocket1.receive_json()
+			#print(data)
+			data = websocket2.receive_json()
 			print(data)
-			assert current_player_nickName == data['currentPlayer']
-			websocket1.send_text(roll)
-			data = websocket1.receive_json()
-			assert next_player == data['currentPlayer']
-			websocket1.close()
-		except KeyboardInterrupt:
-			websocket1.close()
+			try:
+				assert current_player_nickName == data['currentPlayer']
+				response = rollDice_post(current_player.player_id, roll, client)
+				assert (response.status_code == 200)
+				print(response)
+				data = websocket1.receive_json()
+				print(data)
+				data = websocket2.receive_json()
+				print(data)
+				#assert next_player == data['currentPlayer']
+				websocket2.close()
+				data = websocket1.receive_json()
+				print(data)
+				websocket1.close()
+			except KeyboardInterrupt:
+				websocket1.close()
+
 	with db_session:
 		player = db.Player.get(player_id=current_player.player_id)
 		curr_roll = player.currentDiceRoll
@@ -92,7 +107,8 @@ def test_send_one_roll_not_in_turn():
 		wrong_player = db.Game.get(game_id=1).currentPlayer.nextPlayer.player_id
 	with client.websocket_connect("/gameBoard/" + str(wrong_player)) as websocket1:
 		try:
-			websocket1.send_text(roll)
+			response = rollDice_post(wrong_player, roll, client)
+			assert (response.status_code == 403)
 			websocket1.close()
 		except KeyboardInterrupt:
 			websocket1.close()
