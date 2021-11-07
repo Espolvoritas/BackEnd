@@ -101,10 +101,9 @@ async def accuse(room: db.Room = Body(), culprit: db.Monster = Body(), victim: d
 		if not player or not player.lobby or not player.alive:
 			raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="... why?")
 		lobby = player.lobby
-		if room == lobby.room and culprit == lobby.culprit and victim == lobby.victim:
-			await gameBoard_manager.lobby_broadcast("WEEEEEEEEEEE " + str(player.nickName) + " WOOOOOON")
-		else:
-			await gameBoard_manager.lobby_broadcast("Get a load of this guy" + str(player.nickName))
+		won = (room == lobby.room and culprit == lobby.culprit and victim == lobby.victim)
+		await gameBoard_manager.lobby_broadcast({"code": WS_ACCUSATION, "data": {"player": player.nickName, "won": won}}, lobby.game_id)
+		if not won:
 			player.commitDie()
 
 
