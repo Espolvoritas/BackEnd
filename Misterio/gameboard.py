@@ -56,21 +56,32 @@ async def handleTurn(websocket: WebSocket, userID: int):
 			await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
 			return
 		lobby = player.lobby
+		await gameBoard_manager.connect(websocket, userID)
 		await gameBoard_manager.send_personal_message({"code" : WS_CURR_PLAYER + WS_CARD_LIST ,
-		"currentPlayer" : lobby.currentPlayer.nickName, "cards" : get_card_list(userID)}, websocket)
+			"currentPlayer" : lobby.currentPlayer.nickName, "cards" : get_card_list(userID)}, websocket)
+
 	try:
 		await gameBoard_manager.connect(websocket, userID)
 		await gameBoard_manager.send_personal_message(responseMessage, websocket)
 		while(True):
-			roll = await websocket.receive_text()
-			if player_in_turn(userID):
-				with db_session:
-					player = db.Player.get(player_id=userID)
-					player.currentDiceRoll = int(roll)
-				await gameBoard_manager.lobby_broadcast({"code" : WS_CURR_PLAYER, "currentPlayer" : get_next_turn(lobby.game_id)}, lobby.game_id)
+			message = await websocket.receive_json()
+			
+			gameBoard_manager.pickedCard_id = message['card']
+			await gameBoard_manager.lobby_broadcast({"code" : WS_CURR_PLAYER, "currentPlayer" : get_next_turn(lobby.game_id)}, lobby.game_id)
 	except WebSocketDisconnect:
 		gameBoard_manager.disconnect(websocket, lobby.game_id)
 		await gameBoard_manager.lobby_broadcast(await gameBoard_manager.getPlayers(lobby.game_id), lobby.game_id)
+
+@gameBoard.post("/rollDice", status_code=status.HTTP_200_OK)
+async def rollDice(playerId: int = Body(...), roll: int = Body(...)):
+	if player_in_turn(playerId):
+		with db_session:
+			player = db.Player.get(player_id=playerId)
+			player.currentDiceRoll = int(roll)
+	else:
+		raise HTTPException(status_code=403, detail="Player can't roll dice outside his/her turn.")
+	await gameBoard_manager.lobby_broadcast({"code" : WS_CURR_PLAYER, "currentPlayer" : get_next_turn(player.lobby.game_id)}, player.lobby.game_id)
+
 
 @gameBoard.post("/checkSuspicion", status_code=status.HTTP_200_OK)
 async def check_suspicion(playerId: int = Body(...), victimId: int = Body(...), culpritId: int = Body(...)):
