@@ -181,6 +181,8 @@ async def checkSuspicion_players(players: list, suspicionPlayer: str, suspicion:
 				gameBoard_manager.pickedCard_id = None
 			else:
 				suspicionCard = matches.pop()
+				responseMessage = {'code': WS_SENT_CARD_NOTIFY, 'suspicionPlayer': suspicionPlayer, 'card': suspicionCard}
+				await gameBoard_manager.send_personal_message(responseMessage, websocket)
 			responded = True
 		responseBroadcast = {'code': WS_SUSPICION_STATUS , 'responded': responded, 'suspicionPlayer': suspicionPlayer, 'responsePlayer': responsePlayer}
 		#Broadcast suspicion status to all players
