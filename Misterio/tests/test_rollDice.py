@@ -58,10 +58,6 @@ def test_send_one_roll():
 				response = rollDice_post(current_player.player_id, roll, client)
 				assert (response.status_code == 200)
 				print(response)
-				data = websocket1.receive_json()
-				print(data)
-				data = websocket2.receive_json()
-				print(data)
 				#assert next_player == data['currentPlayer']
 				websocket2.close()
 				data = websocket1.receive_json()
@@ -112,7 +108,8 @@ def test_send_one_roll_not_in_turn():
 			websocket1.close()
 		except KeyboardInterrupt:
 			websocket1.close()
+
 	with db_session:
 		player = db.Player.get(player_id=wrong_player)
 		#if current player is player 2
-		assert player.currentDiceRoll is None
+		assert player.currentDiceRoll == 0
