@@ -1,7 +1,7 @@
 from fastapi import APIRouter, status, WebSocket, WebSocketDisconnect, HTTPException, Body
 from pony.orm import db_session, select
 from asyncio import sleep
-
+import logging
 import Misterio.database as db
 from Misterio.constants import *
 from Misterio.lobby import ConnectionManager
@@ -13,26 +13,50 @@ class GameBoardManager(ConnectionManager):
 	pickedCard_id = None 
 		
 gameBoard = APIRouter(prefix="/gameBoard")
+logger = logging.getLogger("gameboard")
 
 gameBoard_manager = GameBoardManager()
 
+#crashes if position is not valid
 def cellByCoordinates(x, y):
 	return dbget(c for c in db.Cell if c.x == x and c.y == y)
 
-@gameBoard.post("/moves", status_code=status.HTTP_201_CREATED)
-def get_moves(player_id: int = Body(...), x: int = Body(...), y: int = Body(...), cost: int = Body(...)):
-	moves = {"player_id": player_id, "options": []}
-	with db_session:
-		reachableCells = cellByCoordinates(x, y).getReachable(cost)
+@db_session
+def positionList(lobbyID):
+	positionList = []
+	game = db.Game.get(game_id=lobbyID)
+	for player in list(game.players):
+		positionList.append({"player_id": player.player_id, "color": player.color.color_id ,"x" : player.location.y, "y": player.location.x})
+	return positionList
 
+@db_session
+def getReachable(player_id):
+	moves = []
+	player = db.Player.get(player_id=player_id)
+	reachableCells = player.location.getReachable(player.currentDiceRoll)
+	if reachableCells is not None:
 		for cell, distance in reachableCells:
-			option = {"x": 0, "y": 0, "cost": 0}
+			option = {"x": 0, "y": 0, "remaining": 0}
+			#Inverted because keep logic working
 			option["x"] = cell.y
 			option["y"] = cell.x
-			option["cost"] = distance
-			moves["options"].append(option)
+			option["remaining"] = distance
+			moves.append(option)
+	return moves
 
-		return moves
+#todo check cost < roll and check newPosition is in movement range
+@gameBoard.post("/moves", status_code=status.HTTP_200_OK)
+async def get_moves(player_id: int = Body(...), x: int = Body(...), y: int = Body(...), remaining: int = Body(...)):
+	print(x,y)
+	with db_session:
+		player = db.Player.get(player_id=player_id)
+		newPosition = cellByCoordinates(x, y)
+		if not newPosition or player != player.lobby.currentPlayer:
+			raise HTTPException(status.HTTP_400_BAD_REQUEST)
+		player.location = newPosition
+		player.currentDiceRoll = remaining
+	await gameBoard_manager.lobby_broadcast({"code": WS_POS_LIST,"positions":positionList(player.lobby.game_id)}, player.lobby.game_id)
+	return {"moves" : getReachable(player_id)}
 
 @db_session
 def get_next_turn(lobbyID: int):
@@ -67,8 +91,9 @@ async def handleTurn(websocket: WebSocket, userID: int):
 			return
 		lobby = player.lobby
 		await gameBoard_manager.connect(websocket, userID)
-		await gameBoard_manager.send_personal_message({"code" : WS_CURR_PLAYER + WS_CARD_LIST ,
-			"currentPlayer" : get_current_turn(lobby.game_id), "cards" : get_card_list(userID)}, websocket)
+		await gameBoard_manager.send_personal_message({"code" : WS_CURR_PLAYER + WS_CARD_LIST +  
+		WS_POS_LIST, "currentPlayer" : get_current_turn(lobby.game_id), "cards" : get_card_list(userID), 
+		"positions" : positionList(lobby.game_id)}, websocket)
 
 	try:
 		while(True):
@@ -86,9 +111,9 @@ async def rollDice(playerId: int = Body(...), roll: int = Body(...)):
 		with db_session:
 			player = db.Player.get(player_id=playerId)
 			player.currentDiceRoll = int(roll)
+			await gameBoard_manager.send_personal_message({"code" : WS_AVAIL_MOVES, "moves" : getReachable(playerId)}, gameBoard_manager.getWebsocket(playerId))
 	else:
 		raise HTTPException(status_code=403, detail="Player can't roll dice outside his/her turn.")
-	await gameBoard_manager.lobby_broadcast({"code" : WS_CURR_PLAYER, "currentPlayer" : get_current_turn(player.lobby.game_id)}, player.lobby.game_id)
 
 
 @gameBoard.post("/checkSuspicion", status_code=status.HTTP_200_OK)
