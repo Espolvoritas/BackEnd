@@ -57,11 +57,11 @@ async def get_moves(player_id: int = Body(...), x: int = Body(...), y: int = Bod
 			player.currentDiceRoll = 0
 		else:
 			player.currentDiceRoll = remaining
-		if room is None and remaining == 0:
+		if room is None and remaining == 0 and "entrance-" not in newPosition.cellType:
 			await update_turn(player.lobby.game_id)
 		player.location = newPosition
-	await gameBoard_manager.lobby_broadcast({"code": WS_POS_LIST + WS_ROOM,"positions":positionList(player.lobby.game_id), "room": room}, player.lobby.game_id)
-	return {"moves" : getReachable(player_id)}
+	await gameBoard_manager.lobby_broadcast({"code": WS_POS_LIST + WS_ROOM,"positions":positionList(player.lobby.game_id)}, player.lobby.game_id)
+	return {"moves" : getReachable(player_id), "room": room}
 
 def getRoomID(roomName: str):
 	for room in db.Room:
@@ -76,7 +76,10 @@ def get_next_turn(lobbyID: int):
 	lobby = db.Game.get(game_id=lobbyID)
 	currentPlayer = lobby.currentPlayer
 	lobby.currentPlayer = currentPlayer.nextPlayer
-	return lobby.currentPlayer.nickName
+	if lobby.currentPlayer.alive:
+		return lobby.currentPlayer.nickName
+	else:
+		get_next_turn(lobbyID)
 
 @db_session
 def get_current_turn(lobbyID: int):
@@ -176,7 +179,7 @@ async def check_suspicion(playerId: int = Body(...), victimId: int = Body(...), 
 	suspicionCard, responsePlayer = await checkSuspicion_players(players, player.nickName, suspicion, lobby.game_id)
 	await update_turn(lobby.game_id)
 	return {'responsePlayer': responsePlayer, 'suspicionCard': suspicionCard}
-
+	
 async def checkSuspicion_players(players: list, suspicionPlayer: str, suspicion: list, lobbyId: int):
 	responded = False
 	responsePlayer = ""
