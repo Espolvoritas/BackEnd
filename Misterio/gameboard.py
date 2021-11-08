@@ -2,6 +2,7 @@ from fastapi import APIRouter, status, WebSocket, WebSocketDisconnect
 from pony.orm import db_session
 
 import Misterio.database as db
+from Misterio.constants import *
 from Misterio.lobby import ConnectionManager
 
 gameBoard = APIRouter(prefix="/gameBoard")
@@ -21,13 +22,20 @@ def player_in_turn(userID: int):
 	lobby = player.lobby
 	return userID == lobby.currentPlayer.player_id
 
+@db_session
+def get_card_list(userID: int):
+	cards = list(db.Player.get(player_id=userID).cards)
+	cards.sort()
+	return list(c.cardId for c in cards)
+
 @gameBoard.websocket("/gameBoard/{userID}")
 async def handleTurn(websocket: WebSocket, userID: int):
 	await gameBoard_manager.connect(websocket, userID)
 	with db_session:
 		player = db.Player.get(player_id=userID)
 		lobby = player.lobby
-		await gameBoard_manager.send_personal_message(lobby.currentPlayer.nickName, websocket)
+		await gameBoard_manager.send_personal_message({"code" : WS_CURR_PLAYER + WS_CARD_LIST ,
+		"currentPlayer" : lobby.currentPlayer.nickName, "cards" : get_card_list(userID)}, websocket)
 	try:
 		while(True):
 			roll = await websocket.receive_text()
@@ -35,7 +43,7 @@ async def handleTurn(websocket: WebSocket, userID: int):
 				with db_session:
 					player = db.Player.get(player_id=userID)
 					player.currentDiceRoll = int(roll)
-				await gameBoard_manager.lobby_broadcast(get_next_turn(lobby.game_id), lobby.game_id)
+				await gameBoard_manager.lobby_broadcast({"code" : WS_CURR_PLAYER, "currentPlayer" : get_next_turn(lobby.game_id)}, lobby.game_id)
 	except WebSocketDisconnect:
 		gameBoard_manager.disconnect(websocket, lobby.game_id)
 		await gameBoard_manager.lobby_broadcast(await gameBoard_manager.getPlayers(lobby.game_id), lobby.game_id)
