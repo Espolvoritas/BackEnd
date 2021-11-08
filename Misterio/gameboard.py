@@ -166,6 +166,7 @@ async def check_suspicion(playerId: int = Body(...), victimId: int = Body(...), 
 async def checkSuspicion_players(players: list, suspicionPlayer: str, suspicion: list, lobbyId: int):
 	responded = False
 	responsePlayer = ""
+	suspicionCard = 0
 	while (not responded or not players):
 		nextPlayer = players.pop()
 		matches = []
