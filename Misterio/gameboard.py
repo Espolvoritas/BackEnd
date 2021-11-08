@@ -103,9 +103,9 @@ async def accuse(room: db.Room = Body(...), monster: db.Monster = Body(...), vic
 		lobby = player.lobby
 		won = (room == lobby.room.cardId and monster == lobby.culprit.cardId and victim == lobby.victim.cardId)
 		await gameBoard_manager.lobby_broadcast({"code": WS_ACCUSATION, "data": {"player": player.nickName, "won": won}}, lobby.game_id)
+		await update_turn(lobby.game_id)
 		if not won:
 			player.commitDie()
-
 
 @gameBoard.websocket("/gameBoard/{userID}")
 async def handleTurn(websocket: WebSocket, userID: int):

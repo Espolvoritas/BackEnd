@@ -179,6 +179,9 @@ class Player(db.Entity):
         self.nextPlayer = nextPlayer
 
     def commitDie(self):
+        #Remove player from turn rotation
+        previousPlayer = self.previousPlayer
+        previousPlayer.nextPlayer = self.nextPlayer
         self.alive=False
 
 class Cell(db.Entity):
