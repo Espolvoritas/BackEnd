@@ -20,7 +20,7 @@ def makeBoard():
     neighbors = defaultdict(lambda: set())
     freeNeighbors = defaultdict(lambda: set())
 
-    rooms = [(2, 2, "CARTPORT"), (2, 10, "LOBBY"),
+    rooms = [(2, 2, "GARAGE"), (2, 10, "LOBBY"),
              (2, 17, "CELLAR"), (11, 15, "HALL"),
              (16, 16, "LAB"), (16, 10, "PANTHEON"),
              (20, 2, "LIBRARY"), (10, 3, "ROOM")]
@@ -31,7 +31,7 @@ def makeBoard():
                  (19, 13, "entrance"), (19, 6, "entrance")]
     
     roomEntrances = [(4, 6, "entrance- LOBBY"), (6, 10, "entrance- LOBBY"),
-                     (4, 13, "entrance- LOBBY"), (6, 2, "entrance- CARTPORT"),
+                     (3, 13, "entrance- LOBBY"), (6, 2, "entrance- GARAGE"),
                      (13, 4, "entrance- LIBRARY"), (13, 10, "entrance- PANTHEON"),
                      (16, 13, "entrance- PANTHEON"), (15, 6, "entrance- PANTHEON"),
                      (13, 16, "entrance- LAB"), (10, 6, "entrance- ROOM"),
@@ -39,8 +39,8 @@ def makeBoard():
 
     portals = [(6, 4, "vampire"), (13, 3, "scorpion"),
                (6, 14, "vampire"), (13, 14, "scorpion"),
-               (14, 6, "cobra"), (13, 4, "tarantula"),
-               (3, 6, "cobra"), (13, 15, "tarantula")]
+               (14, 6, "cobra"), (4, 13, "tarantula"),
+               (3, 6, "cobra"), (15, 13, "tarantula")]
 
     traps = [(6, 6, "trap"), (6, 13, "trap"),
              (13, 6, "trap"), (13, 13, "trap")]
