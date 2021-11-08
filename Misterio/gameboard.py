@@ -95,13 +95,13 @@ def get_card_list(userID: int):
 	return list(c.cardId for c in cards)
 
 @gameBoard.post("/accuse")
-async def accuse(room: db.Room = Body(...), culprit: db.Monster = Body(...), victim: db.Victim = Body(...), userID: int = Body(...)):
+async def accuse(room: db.Room = Body(...), monster: db.Monster = Body(...), victim: db.Victim = Body(...), userID: int = Body(...)):
 	with db_session:
 		player = db.Player.get(player_id=userID)
 		if not player or not player.lobby or not player.alive:
 			raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="... why?")
 		lobby = player.lobby
-		won = (room == lobby.room and culprit == lobby.culprit and victim == lobby.victim)
+		won = (room == lobby.room.cardId and monster == lobby.culprit.cardId and victim == lobby.victim.cardId)
 		await gameBoard_manager.lobby_broadcast({"code": WS_ACCUSATION, "data": {"player": player.nickName, "won": won}}, lobby.game_id)
 		if not won:
 			player.commitDie()
