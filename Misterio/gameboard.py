@@ -141,7 +141,7 @@ async def check_suspicion(playerId: int = Body(...), victimId: int = Body(...), 
 			raise HTTPException(status_code=403, detail="Player is not in game.")
 		if lobby.currentPlayer != player:
 			raise HTTPException(status_code=403, detail="Player can't make a suspicion outside his/her turn.")
-		if (not player.inRoom):
+		if (player.location.cellType != 'room'):
 			raise HTTPException(status_code=403, detail="Player must be in a room to make a suspicion.")
 		if (victim.cardType != "Victim" or culprit.cardType != "Monster"):
 			raise HTTPException(status_code=403, detail="Suspicion card types are invalid.")
