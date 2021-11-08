@@ -136,6 +136,15 @@ class Game(db.Entity):
         colors = list(select(c for c in db.Color if c not in player_colors))
         return colors
 
+    def setStartingPositions(self):
+        players = list(select(p for p in self.players))
+        entrances = list(select(c for c in Cell if c.cellType == "entrance"))
+        shuffle(players)
+        shuffle(entrances)
+        locations = zip(players, entrances)
+        for p, e in locations:
+            p.location = e
+
 class Player(db.Entity):
     player_id = PrimaryKey(int, auto=True) 
     nickName = Required(str)
@@ -144,7 +153,7 @@ class Player(db.Entity):
     currentPlayerOf = Optional(Game, reverse="currentPlayer")
     nextPlayer = Optional('Player', reverse="previousPlayer")
     previousPlayer = Optional('Player', reverse="nextPlayer")
-    currentDiceRoll = Optional(int)
+    currentDiceRoll = Optional(int, default=0)
     color = Optional(Color, reverse='players')
     cards = Set(Card, reverse="owners")
     location = Optional("Cell", reverse="occupiers")
