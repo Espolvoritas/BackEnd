@@ -26,7 +26,7 @@ def test_card_existence():
     ROOM
     PANTHEON
     HALL
-    CARTPORT
+    GARAGE
     '''
 
     allCardNames = set([n.strip() for n in cardNames.split("\n") if len(n.strip()) > 0])
