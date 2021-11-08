@@ -167,7 +167,7 @@ async def checkSuspicion_players(players: list, suspicionPlayer: str, suspicion:
 	responded = False
 	responsePlayer = ""
 	suspicionCard = 0
-	while (not responded or not players):
+	while (not responded and len(players)>0):
 		nextPlayer = players.pop()
 		matches = []
 		for card in suspicion:
