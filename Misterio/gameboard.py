@@ -151,7 +151,7 @@ async def check_suspicion(playerId: int = Body(...), victimId: int = Body(...), 
 			players = []
 			currplayerId = player.nextPlayer.player_id
 			player.currentDiceRoll = 0
-			for i in range(lobby.playerCount):
+			for i in range(lobby.playerCount-1):
 				currplayer = db.Player.get(player_id=currplayerId)
 				currplayerCards = [c.cardId for c in currplayer.cards]
 				players.append([currplayer.player_id, currplayer.nickName, currplayerCards])
