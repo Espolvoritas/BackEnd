@@ -209,25 +209,26 @@ async def check_suspicion(playerId: int = Body(...), victimId: int = Body(...), 
 			for i in range(lobby.playerCount):
 				currplayer = db.Player.get(player_id=currplayerId)
 				currplayerCards = [c.cardId for c in currplayer.cards]
-				players.append([currplayer.player_id, currplayerCards])
+				players.append([currplayer.player_id, currplayer.nickName, currplayerCards])
 				currplayerId = currplayer.nextPlayer.player_id
 			players.reverse()
 			suspicion = [culpritId, victimId, roomId]
-	suspicionCard = await checkSuspicion_players(players, suspicion, lobby.game_id)
-	return {'status': 'SUSPICION_RESPONDED', 'args': [suspicionCard]}
+	await gameBoard_manager.lobby_broadcast({'code': WS_SUSPICION, 'victim': victimId, 'culprit': culpritId, 'room': roomId}, lobby.game_id)
+	suspicionCard = await checkSuspicion_players(players, player.nickName, suspicion, lobby.game_id)
+	return {'status': 'SUSPICION_RESPONDED', 'suspicionCard': suspicionCard}
 
-async def checkSuspicion_players(players: list, suspicion: list, lobbyId: int):
+async def checkSuspicion_players(players: list, playerInTurn: str, suspicion: list, lobbyId: int):
 	responded = False
 	while (not responded or not players):
 		nextPlayer = players.pop()
 		matches = []
 		for card in suspicion:
-			if card in nextPlayer[1]:
+			if card in nextPlayer[2]:
 				matches.append(card)
 		if matches:
 			if len(matches) > 1:
 				responseMessage = {'status': 'PICK_CARD', 'args': matches}
-				websocket = gameBoard_manager.get_websocket(nextPlayer[0], lobbyId)
+			websocket = gameBoard_manager.get_websocket(nextPlayer[0], lobbyId)
 				#Send next player the option to pick a card
 				await gameBoard_manager.send_personal_message(responseMessage, websocket)
 				while gameBoard_manager.pickedCard_id is None:
@@ -237,8 +238,10 @@ async def checkSuspicion_players(players: list, suspicion: list, lobbyId: int):
 				gameBoard_manager.pickedCard_id = None
 			else:
 				suspicionCard = matches.pop()
+				responseMessage = {'code': WS_SUSPICION_NOTIFY, 'playerInTurn': playerInTurn, 'card': suspicionCard}
+				await gameBoard_manager.send_personal_message(responseMessage, websocket)
 			responded = True
-		responseBroadcast = {'status': 'SUSPICION_BROADCAST', 'args': [responded, nextPlayer[0]]}
+		responseBroadcast = {'code': WS_SUSPICION_STATUS , 'responded': responded, 'player': nextPlayer[1]}
 		#Broadcast suspicion status to all players
 		await gameBoard_manager.lobby_broadcast(responseBroadcast, lobbyId)
 	
