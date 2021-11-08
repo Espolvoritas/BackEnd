@@ -51,7 +51,7 @@ class Room(CardValue):
     ROOM = 17
     PANTHEON = 18
     HALL = 19
-    CARTPORT = 20
+    GARAGE = 20
 
 class Card(db.Entity):
     cardId = PrimaryKey(int, auto=True)

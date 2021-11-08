@@ -47,22 +47,27 @@ def getReachable(player_id):
 #todo check cost < roll and check newPosition is in movement range
 @gameBoard.post("/moves", status_code=status.HTTP_200_OK)
 async def get_moves(player_id: int = Body(...), x: int = Body(...), y: int = Body(...), remaining: int = Body(...)):
-	room = ""
+	room = None
 	with db_session:
 		player = db.Player.get(player_id=player_id)
 		newPosition = cellByCoordinates(x, y)
 		if not newPosition or player != player.lobby.currentPlayer:
 			raise HTTPException(status.HTTP_400_BAD_REQUEST)
 		if newPosition.cellType == "room":
-			room = newPosition.roomName
+			room = getRoomID(newPosition.roomName)
 			player.currentDiceRoll = 0
 		else:
 			player.currentDiceRoll = remaining
-		if room == "" and remaining == 0:
+		if room is None and remaining == 0:
 			await update_turn(player.lobby.game_id)
 		player.location = newPosition
 	await gameBoard_manager.lobby_broadcast({"code": WS_POS_LIST + WS_ROOM,"positions":positionList(player.lobby.game_id), "room": room}, player.lobby.game_id)
 	return {"moves" : getReachable(player_id)}
+
+def getRoomID(roomName: str):
+	for room in db.Room:
+		if room.name == roomName:
+			return room
 
 async def update_turn(lobbyID: int):
 	await gameBoard_manager.lobby_broadcast({"code": WS_CURR_PLAYER, "currentPlayer": get_next_turn(lobbyID)})
