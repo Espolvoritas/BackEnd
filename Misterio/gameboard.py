@@ -67,7 +67,7 @@ async def get_moves(player_id: int = Body(...), x: int = Body(...), y: int = Bod
 def getRoomID(roomName: str):
 	for room in db.Room:
 		if room.name == roomName:
-			return room
+			return room.value
 
 async def update_turn(lobbyID: int):
 	await gameBoard_manager.lobby_broadcast({"code": WS_CURR_PLAYER, "currentPlayer": get_next_turn(lobbyID)}, lobbyID)
