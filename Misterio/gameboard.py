@@ -53,9 +53,14 @@ async def get_moves(player_id: int = Body(...), x: int = Body(...), y: int = Bod
 		newPosition = cellByCoordinates(x, y)
 		if not newPosition or player != player.lobby.currentPlayer:
 			raise HTTPException(status.HTTP_400_BAD_REQUEST)
+		if newPosition.cellType == "room":
+			room = newPosition.roomName
+			player.currentDiceRoll = 0
+		else:
+			room = ""
+			player.currentDiceRoll = remaining
 		player.location = newPosition
-		player.currentDiceRoll = remaining
-	await gameBoard_manager.lobby_broadcast({"code": WS_POS_LIST,"positions":positionList(player.lobby.game_id)}, player.lobby.game_id)
+	await gameBoard_manager.lobby_broadcast({"code": WS_POS_LIST + WS_ROOM,"positions":positionList(player.lobby.game_id), "room": room}, player.lobby.game_id)
 	return {"moves" : getReachable(player_id)}
 
 @db_session
