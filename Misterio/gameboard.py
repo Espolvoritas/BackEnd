@@ -70,7 +70,7 @@ def getRoomID(roomName: str):
 			return room
 
 async def update_turn(lobbyID: int):
-	await gameBoard_manager.lobby_broadcast({"code": WS_CURR_PLAYER, "currentPlayer": get_next_turn(lobbyID)})
+	await gameBoard_manager.lobby_broadcast({"code": WS_CURR_PLAYER, "currentPlayer": get_next_turn(lobbyID)}, lobbyID)
 
 @db_session
 def get_next_turn(lobbyID: int):
