@@ -148,6 +148,7 @@ async def check_suspicion(playerId: int = Body(...), victimId: int = Body(...), 
 			roomId = select(c.cardId for c in db.Card if c.cardName == roomName).first()
 			players = []
 			currplayerId = player.nextPlayer.player_id
+			player.currentDiceRoll = 0
 			for i in range(lobby.playerCount):
 				currplayer = db.Player.get(player_id=currplayerId)
 				currplayerCards = [c.cardId for c in currplayer.cards]
