@@ -26,6 +26,12 @@ class ConnectionManager:
 	def exists(self, userID):
 		return userID in self.active_connections.values()
 
+	def getWebsocket(self, userID):
+		key_list = list(self.active_connections.keys())
+		val_list = list(self.active_connections.values())
+		position = val_list.index(userID)
+		return key_list[position]
+
 	async def connect(self, websocket: WebSocket, userID):
 		await websocket.accept()
 		self.active_connections[websocket] = userID
@@ -187,6 +193,7 @@ async def startGame(userID: int = Body(...)):
 			lobby.isStarted = True
 			lobby.sortPlayers()
 			lobby.shuffleDeck()
+			lobby.setStartingPositions()
 			await manager.lobby_broadcast("STATUS_GAME_STARTED", lobby.game_id)
 	return {}
 
