@@ -95,7 +95,7 @@ def get_card_list(userID: int):
 	return list(c.cardId for c in cards)
 
 @gameBoard.post("/accuse")
-async def accuse(room: db.Room = Body(), culprit: db.Monster = Body(), victim: db.Victim = Body(), userID: int = Body(...)):
+async def accuse(room: db.Room = Body(...), culprit: db.Monster = Body(...), victim: db.Victim = Body(...), userID: int = Body(...)):
 	with db_session:
 		player = db.Player.get(player_id=userID)
 		if not player or not player.lobby or not player.alive:
