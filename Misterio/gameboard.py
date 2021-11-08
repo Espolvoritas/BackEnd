@@ -91,64 +91,6 @@ def player_in_turn(userID: int):
 	lobby = player.lobby
 	return userID == lobby.currentPlayer.player_id
 
-async def check_suspicion(playerId: int, suspicion):
-	suspicion = list(map(int, suspicion))
-	with db_session:
-		player = db.Player.get(player_id=playerId)
-		if player is None:
-			raise HTTPException(status_code=400, detail="Player does not exist")
-
-		lobby = player.lobby
-		if lobby is None:
-			raise HTTPException(status_code=403, detail="Player is not in game.")
-		if lobby.currentPlayer != player:
-			raise HTTPException(status_code=403, detail="Player can't make a suspicion outside his/her turn.")
-		if (not player.inRoom):
-			raise HTTPException(status_code=403, detail="Player must be in a room to make a suspicion.")
-		if (suspicion is None or len(suspicion) != 2):
-			raise HTTPException(status_code=403, detail="Suspicion must contain two cards.")
-		else:
-			roomName = player.location.roomName
-			roomCard = select(c.cardId for c in db.Card if c.cardName == roomName)
-			suspicion.append(roomCard.first())
-			players = []
-			currplayerId = player.nextPlayer.player_id
-			for i in range(lobby.playerCount):
-				currplayer = db.Player.get(player_id=currplayerId)
-				currplayerCards = [c.cardId for c in currplayer.cards]
-				players.append([currplayer.player_id, currplayerCards])
-				currplayerId = currplayer.nextPlayer.player_id
-	players.reverse()
-	responded = False
-	while (not responded or not players):
-		nextPlayer = players.pop()
-		matches = []
-		for card in suspicion:
-			if card in nextPlayer[1]:
-				matches.append(card)
-		print("Player beeing suspiced: ", nextPlayer[0], "Suspicion ", suspicion, "Cards: ", nextPlayer[1], "Matches: ", matches)
-		if matches:
-			if len(matches) > 1:
-				responseMessage = {'status': 'PICK_CARD', 'args': matches}
-				websocket = gameBoard_manager.get_websocket(nextPlayer[0], lobbyId)
-				#Send next player the option to pick a card
-				await gameBoard_manager.send_personal_message(responseMessage, websocket)
-				while gameBoard_manager.pickedCard_id is None:
-					#Await for next player to pick a card to show (maybe implement timer)
-					await sleep(1)
-				suspicionCard = gameBoard_manager.pickedCard_id
-				gameBoard_manager.pickedCard_id = None
-			else:
-				suspicionCard = matches.pop()
-			responded = True
-		responseBroadcast = {'status': 'SUSPICION_BROADCAST', 'args': [responded, nextPlayer[0]]}
-		#Broadcast suspicion status to all players
-		await gameBoard_manager.lobby_broadcast(responseBroadcast, lobby.game_id)
-	
-	responseMessage = {'status': 'SUSPICION_RESPONDED', 'args': [suspicionCard]}
-	return responseMessage
-
-
 @gameBoard.websocket("/gameBoard/{userID}")
 async def handleTurn(websocket: WebSocket, userID: int):
 	
