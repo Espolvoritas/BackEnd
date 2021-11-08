@@ -161,6 +161,7 @@ async def check_suspicion(playerId: int = Body(...), victimId: int = Body(...), 
 	await gameBoard_manager.lobby_broadcast({'code': WS_CURR_PLAYER + WS_SUSPICION,
 		'currentPlayer':player.nickName, 'victim': victimId, 'culprit': culpritId, 'room': roomId}, lobby.game_id)
 	suspicionCard, responsePlayer = await checkSuspicion_players(players, player.nickName, suspicion, lobby.game_id)
+	await update_turn(lobby.game_id)
 	return {'responsePlayer': responsePlayer, 'suspicionCard': suspicionCard}
 
 async def checkSuspicion_players(players: list, suspicionPlayer: str, suspicion: list, lobbyId: int):
