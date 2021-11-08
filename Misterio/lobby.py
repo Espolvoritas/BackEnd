@@ -90,6 +90,12 @@ class ConnectionManager:
 			for connection in self.active_lobbys[lobbyID]:
 				await connection.send_json(message)
 
+	async def almost_lobby_broadcast(self, message: List[str], websocket: WebSocket,lobbyID: int):
+		if lobbyID in self.active_lobbys.keys():
+			for connection in self.active_lobbys[lobbyID]:
+				if websocket != connection:
+					await connection.send_json(message)
+
 	async def getPlayers(self, lobbyID: int):
 		player_list = []
 		colors = get_colors(lobbyID)
