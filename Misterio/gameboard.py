@@ -229,6 +229,8 @@ async def checkSuspicion_players(players: list, playerInTurn: str, suspicion: li
 			if len(matches) > 1:
 				responseMessage = {'status': 'PICK_CARD', 'args': matches}
 			websocket = gameBoard_manager.get_websocket(nextPlayer[0], lobbyId)
+			if len(matches) > 1:
+				responseMessage = {'code': WS_PICK_CARD, 'matchingCards': matches}
 				#Send next player the option to pick a card
 				await gameBoard_manager.send_personal_message(responseMessage, websocket)
 				while gameBoard_manager.pickedCard_id is None:
