@@ -57,11 +57,13 @@ async def get_moves(player_id: int = Body(...), x: int = Body(...), y: int = Bod
 			player.currentDiceRoll = 0
 		else:
 			player.currentDiceRoll = remaining
+		player.location = newPosition
+		moves=getReachable(player_id)
 		if room == 0 and remaining == 0 and "entrance-" not in newPosition.cellType:
 			await update_turn(player.lobby.game_id)
-		player.location = newPosition
-	await gameBoard_manager.lobby_broadcast({"code": WS_POS_LIST + WS_ROOM,"positions":positionList(player.lobby.game_id)}, player.lobby.game_id)
-	return {"moves" : getReachable(player_id), "room": room}
+			moves=[]
+	await gameBoard_manager.lobby_broadcast({"code": WS_POS_LIST,"positions":positionList(player.lobby.game_id)}, player.lobby.game_id)
+	return {"moves" : moves, "room": room}
 
 def getRoomID(roomName: str):
 	for room in db.Room:
