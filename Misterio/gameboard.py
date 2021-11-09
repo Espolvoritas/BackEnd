@@ -80,7 +80,7 @@ def get_next_turn(lobbyID: int):
 	lobby.currentPlayer = currentPlayer.nextPlayer
 	if lobby.currentPlayer.alive:
 		return lobby.currentPlayer.nickName
-	else:
+	else:	
 		get_next_turn(lobbyID)
 
 @db_session
@@ -191,7 +191,6 @@ async def check_suspicion(playerId: int = Body(...), victimId: int = Body(...), 
 		'currentPlayer':player.nickName, 'victim': victimId, 'culprit': culpritId, 'room': roomId}, gameBoard_manager.get_websocket(playerId,lobby.game_id),lobby.game_id)
 	await update_turn(lobby.game_id)
 	suspicionCard, responsePlayer = await checkSuspicion_players(players, player.nickName, suspicion, lobby.game_id)
-	await update_turn(lobby.game_id)
 	return {'responsePlayer': responsePlayer, 'suspicionCard': suspicionCard}
 	
 async def checkSuspicion_players(players: list, suspicionPlayer: str, suspicion: list, lobbyId: int):

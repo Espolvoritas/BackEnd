@@ -119,13 +119,19 @@ def test_move():
 				assert current_player_nickName == data['currentPlayer']
 				response = rollDice_post(current_player.player_id, roll, client)
 				assert (response.status_code == 200)
-				data = websocket1.receive_json()
-				possible_moves = data['moves']
+				print("RESPONSE: ",response.json())
+				possible_moves = response.json()['moves']
 				movement = random.choice(possible_moves)
 				response = move_post(current_player.player_id, movement['x'], movement['y'], movement['remaining'],client)
 				assert response.status_code == 200
+				print(response)
+				data = websocket1.receive_json()
+				print(data)
+				data = websocket2.receive_json()
+				print("Move broadcast", data)
 				websocket2.close()
 				data = websocket1.receive_json()
 				websocket1.close()
 			except KeyboardInterrupt:
+				websocket2.close()
 				websocket1.close()
