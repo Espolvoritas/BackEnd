@@ -125,7 +125,7 @@ async def rollDice(playerId: int = Body(...), roll: int = Body(...)):
 		with db_session:
 			player = db.Player.get(player_id=playerId)
 			player.currentDiceRoll = int(roll)
-			await gameBoard_manager.send_personal_message({"code" : WS_AVAIL_MOVES, "moves" : getReachable(playerId)}, gameBoard_manager.getWebsocket(playerId))
+		return {"moves" : getReachable(playerId)}
 	else:
 		raise HTTPException(status_code=403, detail="Player can't roll dice outside his/her turn.")
 
