@@ -23,7 +23,7 @@ def makeBoard():
     rooms = [(2, 2, "GARAGE"), (2, 10, "LOBBY"),
              (2, 17, "CELLAR"), (11, 15, "HALL"),
              (16, 16, "LAB"), (16, 10, "PANTHEON"),
-             (20, 2, "LIBRARY"), (10, 3, "ROOM")]
+             (16, 2, "LIBRARY"), (10, 3, "ROOM")]
 
     entrances = [(0, 6, "entrance"), (0, 13, "entrance"), 
                  (6, 0, "entrance"), (13, 0, "entrance"), 
