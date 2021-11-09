@@ -26,15 +26,24 @@ def test_makeSuspicion_2players():
 	with client.websocket_connect("/lobby/1") as websocket1, \
 		client.websocket_connect("/lobby/2") as websocket2:
 		try:
-			data = websocket1.receive_json()
-			for player, expected in zip(data['players'], expectedPlayers):
+			data1 = websocket1.receive_json()
+			for player, expected in zip(data1['players'], expectedPlayers):
 				assert (player['nickName'] == expected)
-			data = websocket2.receive_json()
-			for player, expected in zip(data['players'], expectedPlayers):
+			print("Data1", data1)
+			data2 = websocket2.receive_json()
+			for player, expected in zip(data2['players'], expectedPlayers):
 				assert (player['nickName'] == expected)
-			
+			print("data2", data2)
 			response = startGame_post(1, client)
 			assert (response.status_code == 200)
+
+			data3 = websocket1.receive_json()
+			print("data3", data3)
+
+			data1 = websocket1.receive_json()
+			data2 = websocket2.receive_json()
+			print(data1)
+			print(data2)
 			
 			websocket2.close()
 			data = websocket1.receive_json()
@@ -52,13 +61,10 @@ def test_makeSuspicion_2players():
 		
 		roomCards = select(c for c in player2.cards if c.cardType == 'Room')
 		roomCard = roomCards.first()
-		room1 = db.Cell()
-		room1.roomName = roomCard.cardName
+		room1 = db.Cell.get(roomName=roomCard.cardName)
 		player1.location = room1
 		cards1 = list(player1.cards)
 		cards2 = list(player2.cards)
-		cards3 = list(player2.cards)
-		roomcard = db.Card.get(cardName=room1.roomName)
 		culprit = select(c for c in db.Card if c in player2.cards and c.cardType == 'Monster').first()
 		victim = select(c for c in db.Card if c in player2.cards and c.cardType == 'Victim').first()
 		print(culprit.cardName)
@@ -67,22 +73,30 @@ def test_makeSuspicion_2players():
 		victim = victim.cardId
 	with client.websocket_connect("/gameBoard/" + str(player1.player_id)) as websocket1:
 		currplayer = websocket1.receive_json()
+		print(currplayer)
 		with client.websocket_connect("/gameBoard/" + str(player2.player_id)) as websocket2:
 			currplayer = websocket2.receive_json()#connection broadcast
+			print(currplayer)
 			try:
 				print("Player 1 Cards: ", cards1)
 				print("Player 2 Cards: ", cards2)
-				print("Suspicion: ", victim, culprit, roomCard.cardId )
+				
 				websocket2.send_json({'status': 'PICK_CARD', 'card': victim})
+				print("AAaa")
 				response = suspicion_post(player1.player_id, victim, culprit, client)
+				
+				data2 = websocket2.receive_json()
+				
+				print(data2)
+
+				data2 = websocket2.receive_json()
+				print(data2)
+				
 				data1 = websocket1.receive_json()
 				data2 = websocket2.receive_json()
-				
 				print(data1)
 				print(data2)
-				data2 = websocket2.receive_json()
-				print(data2)
-				
+
 				data1 = websocket1.receive_json()
 				data2 = websocket2.receive_json()
 				print(data1)
@@ -148,13 +162,11 @@ def test_makeSuspicion_3players():
 		
 		roomCards = select(c for c in player3.cards if c.cardType == 'Room')
 		roomCard = roomCards.first()
-		room1 = db.Cell()
-		room1.roomName = roomCard.cardName
+		room1 = db.Cell.get(roomName=roomCard.cardName)
 		player1.location = room1
 		cards1 = list(player1.cards)
 		cards2 = list(player2.cards)
 		cards3 = list(player3.cards)
-		roomcard = db.Card.get(cardName=room1.roomName)
 		culprit = select(c for c in db.Card if c in player3.cards and c.cardType == 'Monster').first()
 		victim = select(c for c in db.Card if c in player3.cards and c.cardType == 'Victim').first()
 		print(culprit.cardName)
