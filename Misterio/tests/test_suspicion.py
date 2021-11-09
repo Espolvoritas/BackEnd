@@ -81,7 +81,7 @@ def test_makeSuspicion_2players():
 				print("Player 1 Cards: ", cards1)
 				print("Player 2 Cards: ", cards2)
 				
-				websocket2.send_json({'status': 'PICK_CARD', 'card': victim})
+				websocket2.send_json({'code': 'PICK_CARD', 'card': victim})
 				print("AAaa")
 				response = suspicion_post(player1.player_id, victim, culprit, client)
 				
@@ -169,8 +169,6 @@ def test_makeSuspicion_3players():
 		cards3 = list(player3.cards)
 		culprit = select(c for c in db.Card if c in player3.cards and c.cardType == 'Monster').first()
 		victim = select(c for c in db.Card if c in player3.cards and c.cardType == 'Victim').first()
-		print(culprit.cardName)
-		print(victim.cardName)
 		culprit = culprit.cardId
 		victim = victim.cardId
 	with client.websocket_connect("/gameBoard/" + str(player1.player_id)) as websocket1:
@@ -186,7 +184,7 @@ def test_makeSuspicion_3players():
 					print("Player 3 Cards: ", cards3)
 					print("Suspicion: ", victim, culprit, roomCard.cardId )
 
-					websocket3.send_json({'status': 'PICK_CARD', 'card': victim})
+					websocket3.send_json({'code': 'PICK_CARD', 'card': victim})
 					response = suspicion_post(player1.player_id, victim, culprit, client)
 					data1 = websocket1.receive_json()
 					data2 = websocket2.receive_json()
