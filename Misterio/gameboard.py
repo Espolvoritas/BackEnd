@@ -32,7 +32,7 @@ def positionList(lobbyID):
 def getReachable(player_id):
 	moves = []
 	player = db.Player.get(player_id=player_id)
-	reachableCells = player.location.getReachable(player.currentDiceRoll)
+	reachableCells = player.location.getReachable(player.currentDiceRoll, player)
 	if reachableCells is not None:
 		for cell, distance in reachableCells:
 			option = {"x": 0, "y": 0, "remaining": 0}
@@ -165,7 +165,7 @@ async def check_suspicion(playerId: int = Body(...), victimId: int = Body(...), 
 	suspicionCard, responsePlayer = await checkSuspicion_players(players, player.nickName, suspicion, lobby.game_id)
 	await update_turn(lobby.game_id)
 	return {'responsePlayer': responsePlayer, 'suspicionCard': suspicionCard}
-
+	
 async def checkSuspicion_players(players: list, suspicionPlayer: str, suspicion: list, lobbyId: int):
 	responded = False
 	responsePlayer = ""
