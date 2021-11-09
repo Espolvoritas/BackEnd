@@ -96,24 +96,3 @@ def makeBoard():
 
     allCells, neighbors, freeNeighbors = indexedOnOne(allCells, neighbors, freeNeighbors)
     return allCells, neighbors, freeNeighbors
-
-if __name__ == "__main__":
-    a, b, c = makeBoard()
-
-    d = {}
-
-    common = set(b.keys()) & set(c.keys())
-    for k in b.keys():
-        if k not in common:
-            d[k] = b[k]
-
-    for k in c.keys():
-        if k not in common:
-            d[k] = c[k]
-
-    for k in b.keys():
-        if k in common:
-            d[k] = b[k] | c[k]
-
-    for k in d.keys():
-        print(f'{" ".join([str(l) for l in k])} : {" ".join([str(m) for m in d[k]])}')
