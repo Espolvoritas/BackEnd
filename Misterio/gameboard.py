@@ -97,6 +97,15 @@ def get_card_list(userID: int):
 	cards = list(db.Player.get(player_id=userID).cards)
 	return list(c.cardId for c in cards)
 
+@db_session
+def all_dead(lobbyID: int):
+	game = db.Game.get(game_id=lobbyID)
+	players = game.players
+	for player in players:
+		if player.alive:
+			return False
+	return True
+
 @gameBoard.post("/accuse")
 async def accuse(room: int = Body(...), monster: int = Body(...), victim: int = Body(...), userID: int = Body(...)):
 	with db_session:
@@ -109,6 +118,8 @@ async def accuse(room: int = Body(...), monster: int = Body(...), victim: int = 
 		await update_turn(lobby.game_id)
 		if not won:
 			player.commitDie()
+		if all_dead(lobby.game_id):
+			await gameBoard_manager.lobby_broadcast({"code": WS_LOST}, lobby.game_id)
 
 @gameBoard.websocket("/gameBoard/{userID}")
 async def handleTurn(websocket: WebSocket, userID: int):
