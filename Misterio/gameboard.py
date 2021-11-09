@@ -140,8 +140,8 @@ async def handleTurn(websocket: WebSocket, userID: int):
 	try:
 		while(True):
 			message = await websocket.receive_json()
-			gameBoard_manager.pickedCard_id = message['card']
-			await gameBoard_manager.lobby_broadcast({"code" : WS_CURR_PLAYER, "currentPlayer" : get_current_turn(lobby.game_id)}, lobby.game_id)
+			if message['code'] == "PICK_CARD":
+				gameBoard_manager.pickedCard_id = message['card']
 	except WebSocketDisconnect:
 		gameBoard_manager.disconnect(websocket, lobby.game_id)
 		await gameBoard_manager.lobby_broadcast(await gameBoard_manager.getPlayers(lobby.game_id), lobby.game_id)
