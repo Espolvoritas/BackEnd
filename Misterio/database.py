@@ -77,7 +77,6 @@ class Card(db.Entity):
     def assign(self, player):
         player.cards.add(self)
 
-
 class Game(db.Entity):
     game_id = PrimaryKey(int, auto=True) 
     name = Required(str)
@@ -248,6 +247,15 @@ def fillCards():
             Card(cardName=card.name, cardType="Victim")
         for card in Room:
             Card(cardName=card.name, cardType="Room")
+
+def fillCards():
+    with db_session:
+        for card in Monster:
+            monster = Card(cardName=card.name, cardType="Monster")
+        for card in Victim:
+            victim = Card(cardName=card.name, cardType="Victim")
+        for card in Room:
+            room = Card(cardName=card.name, cardType="Room")
 
 def fillCards():
     with db_session:

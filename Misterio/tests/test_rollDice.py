@@ -65,7 +65,6 @@ def test_send_one_roll():
 				websocket1.close()
 			except KeyboardInterrupt:
 				websocket1.close()
-
 	with db_session:
 		player = db.Player.get(player_id=current_player.player_id)
 		curr_roll = player.currentDiceRoll
