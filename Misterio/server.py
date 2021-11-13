@@ -1,9 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
-from pony.orm.core import select
-from games import game
-from turns import gameBoard
+
+from Misterio.lobby import game
+from Misterio.gameboard import gameBoard
 
 app = FastAPI()
 

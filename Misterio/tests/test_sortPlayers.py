@@ -1,18 +1,12 @@
-import os
-import database as db
 from pony.orm import db_session
 from pony.orm import flush
 
-
-def clear_tables():
-    db.db.drop_table(db.Player, if_exists=True, with_all_data=True)
-    db.db.drop_table(db.Game, if_exists=True, with_all_data=True)
-    db.db.create_tables()
+import Misterio.database as db
 
 def test_playing_order():
     '''Check if players are sorted at random correctly.'''
 
-    clear_tables()
+    db.clear_tables()
         
     print("\nTesting setNext, previousPlayer, and sortPlayers\n")
         
@@ -57,4 +51,4 @@ def test_playing_order():
 
         assert(len(distinctOrders)>0)
 
-    clear_tables()
+    db.clear_tables()

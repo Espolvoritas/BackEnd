@@ -1,28 +1,23 @@
-from server import app
 from fastapi.testclient import TestClient
-
-import database
-from database import db
 from pony.orm import db_session, flush
+import pytest
+from fastapi import WebSocketDisconnect
+from Misterio.server import app
+import Misterio.database as db
 
 client = TestClient(app)
 
-def clear_tables():
-    db.drop_table(db.Player, if_exists=True, with_all_data=True)
-    db.drop_table(db.Game, if_exists=True, with_all_data=True)
-    db.create_tables()
-
 def test_join():
-    clear_tables()
+    db.clear_tables()
 
     with db_session:
        
-        player1 = database.Player(nickName="foo1")
-        player2 = database.Player(nickName="foo2")
-        player3 = database.Player(nickName="foo3")
+        player1 = db.Player(nickName="foo1")
+        player2 = db.Player(nickName="foo2")
+        player3 = db.Player(nickName="foo3")
         flush()
         
-        game = database.Game(name="fooGame", host=player2, isStarted=False)
+        game = db.Game(name="fooGame", host=player2, isStarted=False)
         flush()
         game.addPlayer(player1)
         flush()
@@ -35,18 +30,18 @@ def test_join():
         taken_nickname = "foo2"
         free_nickname = "foo4"
 
-    response1 = client.post("/game/joinCheck",
+    response1 = client.post("/lobby/joinCheck",
                         headers={"accept": "application/json", "Content-Type" : "application/json"},
-                        json={"gameId": game_id, "playerNickname": taken_nickname}).json()
+                        json={"gameId": game_id, "playerNickname": taken_nickname})
 
-    response2 = client.post("/game/joinCheck",
+    response2 = client.post("/lobby/joinCheck",
                         headers={"accept": "application/json", "Content-Type" : "application/json"},
                         json={"gameId": game_id, "playerNickname": free_nickname}).json()
 
     print(response1)
     print(response2)
 
-    clear_tables()
+    db.clear_tables()
 
-    assert(response1["nicknameIsValid"] == False)
+    assert response1.status_code == 400
     assert(response2["nicknameIsValid"] == True)
