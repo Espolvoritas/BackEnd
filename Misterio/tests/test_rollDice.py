@@ -3,7 +3,7 @@ from pony.orm import db_session, flush
 import string
 import logging
 import random
-from Misterio.functions import *
+from Misterio.testing_utils import *
 from Misterio.server import app
 import Misterio.database as db
 

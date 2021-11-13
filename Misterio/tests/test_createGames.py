@@ -3,7 +3,7 @@ import string
 import random # define the random module  
 
 from Misterio.server import app
-from Misterio.functions import *
+from Misterio.testing_utils import *
 
 client = TestClient(app)
 

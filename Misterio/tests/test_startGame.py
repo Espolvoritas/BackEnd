@@ -4,7 +4,7 @@ from pony.orm import db_session
 import string    
 import random # define the random module  
 import pytest
-from Misterio.functions import *
+from Misterio.testing_utils import *
 
 from Misterio.server import app
 import Misterio.database as db

@@ -5,7 +5,7 @@ import random # define the random module
 
 from Misterio.server import app
 import Misterio.database as db
-from Misterio.functions import *
+from Misterio.testing_utils import *
 
 client = TestClient(app)
 
