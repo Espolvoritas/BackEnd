@@ -26,6 +26,12 @@ class ConnectionManager:
 	def exists(self, userID):
 		return userID in self.active_connections.values()
 
+	def getWebsocket(self, userID):
+		key_list = list(self.active_connections.keys())
+		val_list = list(self.active_connections.values())
+		position = val_list.index(userID)
+		return key_list[position]
+
 	async def connect(self, websocket: WebSocket, userID):
 		await websocket.accept()
 		self.active_connections[websocket] = userID
@@ -65,6 +71,12 @@ class ConnectionManager:
 						db.Player.get(player_id=userID).delete()
 						game.playerCount -= 1
 
+	def get_websocket(self, playerId: int, lobbyId):
+		if lobbyId in self.active_lobbys.keys():
+			for connection in self.active_lobbys[lobbyId]:
+				if self.active_connections[connection] == playerId:
+					return connection
+
 	async def send_personal_message(self, message: List[str], websocket: WebSocket):
 		await websocket.send_json(message)
 
@@ -77,6 +89,12 @@ class ConnectionManager:
 		if lobbyID in self.active_lobbys.keys():
 			for connection in self.active_lobbys[lobbyID]:
 				await connection.send_json(message)
+
+	async def almost_lobby_broadcast(self, message: List[str], websocket: WebSocket,lobbyID: int):
+		if lobbyID in self.active_lobbys.keys():
+			for connection in self.active_lobbys[lobbyID]:
+				if websocket != connection:
+					await connection.send_json(message)
 
 	async def getPlayers(self, lobbyID: int):
 		player_list = []
@@ -181,6 +199,7 @@ async def startGame(userID: int = Body(...)):
 			lobby.isStarted = True
 			lobby.sortPlayers()
 			lobby.shuffleDeck()
+			lobby.setStartingPositions()
 			await manager.lobby_broadcast("STATUS_GAME_STARTED", lobby.game_id)
 	return {}
 

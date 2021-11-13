@@ -10,7 +10,22 @@ import Misterio.database as db
 client = TestClient(app)
 logger = logging.getLogger("gameboard")
 
-def test_send_one_roll():
+@db_session
+def find_entrance(movement):
+	for possibility in movement:
+		cell = cellByCoordinates(possibility['x'], possibility['y'])
+		if 'entrance- ' in cell.cellType :
+			return possibility
+
+@db_session
+def find_room(movement):
+	for possibility in movement:
+		cell = cellByCoordinates(possibility['x'], possibility['y'])
+		print(cell)
+		if 'room' == cell.cellType :
+			return possibility
+
+def test_bad_move():
 	db.clear_tables()
 	host = get_random_string(6)
 	game_id = create_game_post(host, client).json()['game_id']
@@ -37,45 +52,37 @@ def test_send_one_roll():
 		except KeyboardInterrupt:
 			websocket2.close()
 			websocket1.close()
-	
-	roll = random.randint(1,6)
+
+		roll = random.randint(1,6)
 	with db_session:
 		current_player = db.Game.get(game_id=game_id).currentPlayer
 		current_player_nickName = current_player.nickName
 		next_player = current_player.nextPlayer
 
-	print(current_player)
 	with client.websocket_connect("/gameBoard/" + str(current_player.player_id)) as websocket1:
 		data = websocket1.receive_json()
-		print(data)
 		with client.websocket_connect("/gameBoard/" + str(next_player.player_id)) as websocket2:
 			#data = websocket1.receive_json()
-			#print(data)
 			data = websocket2.receive_json()
-			print(data)
 			try:
 				assert current_player_nickName == data['currentPlayer']
 				response = rollDice_post(current_player.player_id, roll, client)
 				assert (response.status_code == 200)
-				print(response)
-				#assert next_player == data['currentPlayer']
+				response = move_post(current_player.player_id, 999, 999, 0,client)
+				assert response.status_code == 400
 				websocket2.close()
 				data = websocket1.receive_json()
-				print(data)
 				websocket1.close()
 			except KeyboardInterrupt:
 				websocket1.close()
-	with db_session:
-		player = db.Player.get(player_id=current_player.player_id)
-		curr_roll = player.currentDiceRoll
-	assert curr_roll == roll
 
-def test_send_one_roll_not_in_turn():
+def test_move():
 	db.clear_tables()
 	host = get_random_string(6)
 	game_id = create_game_post(host, client).json()['game_id']
-	expectedPlayers = create_players(1,game_id)
+	expectedPlayers = create_players(1, game_id)
 	expectedPlayers.insert(0,host)
+	
 	with client.websocket_connect("/lobby/1") as websocket1, \
 		client.websocket_connect("/lobby/2") as websocket2:
 		try:
@@ -96,19 +103,35 @@ def test_send_one_roll_not_in_turn():
 		except KeyboardInterrupt:
 			websocket2.close()
 			websocket1.close()
-	
-	roll = random.randint(1,6)
-	with db_session:
-		wrong_player = db.Game.get(game_id=1).currentPlayer.nextPlayer.player_id
-	with client.websocket_connect("/gameBoard/" + str(wrong_player)) as websocket1:
-		try:
-			response = rollDice_post(wrong_player, roll, client)
-			assert (response.status_code == 403)
-			websocket1.close()
-		except KeyboardInterrupt:
-			websocket1.close()
 
+		roll = random.randint(1,6)
 	with db_session:
-		player = db.Player.get(player_id=wrong_player)
-		#if current player is player 2
-		assert player.currentDiceRoll == 0
+		current_player = db.Game.get(game_id=game_id).currentPlayer
+		current_player_nickName = current_player.nickName
+		next_player = current_player.nextPlayer
+
+	with client.websocket_connect("/gameBoard/" + str(current_player.player_id)) as websocket1:
+		data = websocket1.receive_json()
+		with client.websocket_connect("/gameBoard/" + str(next_player.player_id)) as websocket2:
+			#data = websocket1.receive_json()
+			data = websocket2.receive_json()
+			try:
+				assert current_player_nickName == data['currentPlayer']
+				response = rollDice_post(current_player.player_id, roll, client)
+				assert (response.status_code == 200)
+				print("RESPONSE: ",response.json())
+				possible_moves = response.json()['moves']
+				movement = random.choice(possible_moves)
+				response = move_post(current_player.player_id, movement['x'], movement['y'], movement['remaining'],client)
+				assert response.status_code == 200
+				print(response)
+				data = websocket1.receive_json()
+				print(data)
+				data = websocket2.receive_json()
+				print("Move broadcast", data)
+				websocket2.close()
+				data = websocket1.receive_json()
+				websocket1.close()
+			except KeyboardInterrupt:
+				websocket2.close()
+				websocket1.close()
