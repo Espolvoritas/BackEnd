@@ -109,6 +109,12 @@ class Game(db.Entity):
         locations = zip(players, entrances)
         for p, e in locations:
             p.location = e
+    
+    def win_check(self, monster, victim, room):
+        monster_correct = (self.monster.card_id == monster)
+        victim_correct = (self.victim.card_id == victim)
+        room_correct = (self.room.card_id == room)
+        return (monster_correct and victim_correct and room_correct)
 
 class Player(db.Entity):
     player_id = PrimaryKey(int, auto=True) 
