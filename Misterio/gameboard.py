@@ -81,7 +81,7 @@ def get_next_turn(lobbyID: int):
 	if lobby.currentPlayer.alive:
 		return lobby.currentPlayer.nickName
 	else:	
-		get_next_turn(lobbyID)
+		return get_next_turn(lobbyID)
 
 @db_session
 def get_current_turn(lobbyID: int):
