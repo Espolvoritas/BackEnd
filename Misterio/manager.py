@@ -113,7 +113,7 @@ class ConnectionManager:
 		return response
 	
 class GameBoardManager(ConnectionManager):
-	pickedCard_id = None 
+	picked_card_id = None 
 
 	async def update_turn(self, lobby_id: int):
 		await self.lobby_broadcast({"code": WS_CURR_PLAYER, "current_player": get_next_turn(lobby_id)}, lobby_id)

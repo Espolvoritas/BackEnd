@@ -1,4 +1,4 @@
-from fastapi import APIRouter, status, WebSocket, WebSocketDisconnect, HTTPException, Body
+from fastapi import APIRouter, status, WebSocket, WebSocketDisconnect, HTTPException, Body, websockets
 from pony.orm import db_session, select
 from asyncio import sleep
 import logging
@@ -78,14 +78,10 @@ async def roll_dice(player_id: int = Body(...), roll: int = Body(...)):
 @gameBoard.post("/checkSuspicion", status_code=status.HTTP_200_OK)
 async def check_suspicion(player_id: int = Body(...), victim_id: int = Body(...), monster_id: int = Body(...)):
 	with db_session:
-		print("player")
 		player = get_player_by_id(player_id)
 		lobby = player.lobby
-		print("victim")
 		victim = get_card_by_id(victim_id)
-		print("monster")
 		monster = get_card_by_id(monster_id)
-		print(player, victim, monster)
 		if player is None:
 			raise HTTPException(status_code=400, detail="Player does not exist")
 		if lobby is None:
@@ -97,14 +93,13 @@ async def check_suspicion(player_id: int = Body(...), victim_id: int = Body(...)
 		if (not victim.is_victim() or not monster.is_monster()):
 			raise HTTPException(status_code=403, detail="Suspicion card types are invalid.")
 		else:
-			room_name = player.location.room_name
-			room_id = select(c.card_id for c in db.Card if c.card_name == room_name).first()
+			room_id = select(c.card_id for c in db.Card if c.is_room()).first()
 			players = []
 			currplayer_id = player.next_player.player_id
 			player.set_roll(0)
 			for i in range(lobby.player_count-1):
 				currplayer = get_player_by_id(currplayer_id)
-				currplayer_cards = [c.card_id for c in currplayer.cards]
+				currplayer_cards = get_card_list(currplayer_id)
 				players.append([currplayer.player_id, currplayer.nickname, currplayer_cards])
 				currplayer_id = currplayer.next_player.player_id
 			players.reverse()
@@ -120,14 +115,13 @@ async def check_suspicion(player_id: int = Body(...), victim_id: int = Body(...)
 	websocket = game_manager.get_websocket(player_id,lobby.lobby_id)
 	await game_manager.almost_lobby_broadcast(suspicion_broadcast, websocket,lobby.lobby_id)
 	await game_manager.update_turn(lobby.lobby_id)
-	suspicionCard, response_player = await checkSuspicion_players(players, player.nickname, suspicion, lobby.lobby_id)
-	return {'response_player': response_player, 'suspicionCard': suspicionCard}
+	suspicion_card, response_player = await check_player_cards(players, player.nickname, suspicion, lobby.lobby_id)
+	return {'response_player': response_player, 'suspicion_card': suspicion_card}
 	
-async def checkSuspicion_players(players: list, suspicionPlayer: str, suspicion: list, lobby_id: int):
+async def check_player_cards(players: list, suspicion_player: str, suspicion: list, lobby_id: int):
 	responded = False
 	response_player = ""
-	suspicionCard = 0
-	print("checking")
+	suspicion_card = 0
 	while (not responded and len(players)>0):
 		next_player = players.pop()
 		matches = []
@@ -138,14 +132,14 @@ async def checkSuspicion_players(players: list, suspicionPlayer: str, suspicion:
 		if matches:
 			websocket = game_manager.get_websocket(next_player[0], lobby_id)
 			if len(matches) > 1:
-				responseMessage = {'code': WS_PICK_CARD, 'matchingCards': matches}
+				response_message = {'code': WS_PICK_CARD, 'matching_cards': matches}
 				#Send next player the option to pick a card
-				await game_manager.send_personal_message(responseMessage, websocket)
-				while game_manager.pickedCard_id is None:
+				await game_manager.send_personal_message(response_message, websocket)
+				while game_manager.picked_card_id is None:
 					#Await for next player to pick a card to show (maybe implement timer)
 					await sleep(1)
-				suspicionCard = game_manager.pickedCard_id
-				game_manager.pickedCard_id = None
+				suspicion_card = game_manager.picked_card_id
+				game_manager.picked_card_id = None
 			else:
 				suspicion_card = matches.pop()
 				response_message = {
@@ -162,13 +156,13 @@ async def checkSuspicion_players(players: list, suspicionPlayer: str, suspicion:
 			'response_player': response_player
 		}
 		#Broadcast suspicion status to all players
-		await game_manager.lobby_broadcast(responseBroadcast, lobby_id)
+		await game_manager.lobby_broadcast(response_broadcast, lobby_id)
 	
-	return suspicionCard, response_player
+	return suspicion_card, response_player
 
 
 @gameBoard.websocket("/gameBoard/{player_id}")
-async def handleTurn(websocket: WebSocket, player_id: int):
+async def handle_turn(websocket: WebSocket, player_id: int):
 	
 	with db_session:
 		player = get_player_by_id(player_id)
@@ -189,7 +183,7 @@ async def handleTurn(websocket: WebSocket, player_id: int):
 		while(True):
 			message = await websocket.receive_json()
 			if message['code'] == "PICK_CARD":
-				game_manager.pickedCard_id = message['card']
+				game_manager.picked_card_id = message['card']
 	except WebSocketDisconnect:
 		game_manager.disconnect(websocket, lobby.lobby_id)
 		await game_manager.lobby_broadcast(await game_manager.get_players(lobby.lobby_id), lobby.lobby_id)
