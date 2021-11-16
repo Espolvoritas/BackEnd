@@ -82,13 +82,13 @@ class Game(db.Entity):
 
     def shuffle_deck(self):
         self.fill_envelope()
-        envelope = select((g.victim,g.monster,g.room) for g in Game if g.game_id == self.game_id)
-        available_cards = list(select(c for c in Card if c not in envelope.first()))
+        envelope = [self.monster, self.victim, self.room]
+        available_cards = list(select(c for c in Card if c not in envelope))
         shuffle(available_cards)
         player = self.current_player
         for card in available_cards:
             player.cards.add(card)
-            player = player.nextPlayer
+            player = player.next_player
         min_cards = count(player.cards)
         players = list(select(p for p in self.lobby.players if count(p.cards) == min_cards))
         self.current_player = choice(players)
