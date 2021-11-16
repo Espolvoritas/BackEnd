@@ -14,7 +14,7 @@ logger = logging.getLogger("gameboard")
 def find_entrance(movement):
 	for possibility in movement:
 		cell = cellByCoordinates(possibility['x'], possibility['y'])
-		if 'entrance- ' in cell.cellType :
+		if 'entrance- ' in cell.cell_type :
 			return possibility
 
 @db_session
@@ -22,14 +22,14 @@ def find_room(movement):
 	for possibility in movement:
 		cell = cellByCoordinates(possibility['x'], possibility['y'])
 		print(cell)
-		if 'room' == cell.cellType :
+		if 'room' == cell.cell_type :
 			return possibility
 
 def test_bad_move():
 	db.clear_tables()
 	host = get_random_string(6)
-	game_id = create_game_post(host, client).json()['game_id']
-	expectedPlayers = create_players(1, game_id)
+	lobby_id = create_game_post(host, client).json()['lobby_id']
+	expectedPlayers = create_players(1, lobby_id)
 	expectedPlayers.insert(0,host)
 	
 	with client.websocket_connect("/lobby/1") as websocket1, \
@@ -37,17 +37,17 @@ def test_bad_move():
 		try:
 			data = websocket1.receive_json()
 			for player, expected in zip(data['players'], expectedPlayers):
-				assert player['nickName'] == expected
+				assert player['nickname'] == expected
 			data = websocket2.receive_json()
 			for player, expected in zip(data['players'], expectedPlayers):
-				assert player['nickName'] == expected
+				assert player['nickname'] == expected
 
-			response = startGame_post(1, client)
+			response = start_game_post(1, client)
 			assert response.status_code == 200
 			websocket2.close()
 			data = websocket1.receive_json()
 			for player, expected in zip(data['players'], expectedPlayers):
-				assert player['nickName'] == expected
+				assert player['nickname'] == expected
 			websocket1.close()
 		except KeyboardInterrupt:
 			websocket2.close()
@@ -55,9 +55,9 @@ def test_bad_move():
 
 		roll = random.randint(1,6)
 	with db_session:
-		current_player = db.Game.get(game_id=game_id).currentPlayer
-		current_player_nickName = current_player.nickName
-		next_player = current_player.nextPlayer
+		current_player = db.Lobby.get(lobby_id=lobby_id).game.current_player
+		current_player_nickName = current_player.nickname
+		next_player = current_player.next_player
 
 	with client.websocket_connect("/gameBoard/" + str(current_player.player_id)) as websocket1:
 		data = websocket1.receive_json()
@@ -65,8 +65,8 @@ def test_bad_move():
 			#data = websocket1.receive_json()
 			data = websocket2.receive_json()
 			try:
-				assert current_player_nickName == data['currentPlayer']
-				response = rollDice_post(current_player.player_id, roll, client)
+				assert current_player_nickName == data["current_player"]
+				response = roll_dice_post(current_player.player_id, roll, client)
 				assert (response.status_code == 200)
 				response = move_post(current_player.player_id, 999, 999, 0,client)
 				assert response.status_code == 400
@@ -79,8 +79,8 @@ def test_bad_move():
 def test_move():
 	db.clear_tables()
 	host = get_random_string(6)
-	game_id = create_game_post(host, client).json()['game_id']
-	expectedPlayers = create_players(1, game_id)
+	lobby_id = create_game_post(host, client).json()['lobby_id']
+	expectedPlayers = create_players(1, lobby_id)
 	expectedPlayers.insert(0,host)
 	
 	with client.websocket_connect("/lobby/1") as websocket1, \
@@ -88,17 +88,17 @@ def test_move():
 		try:
 			data = websocket1.receive_json()
 			for player, expected in zip(data['players'], expectedPlayers):
-				assert player['nickName'] == expected
+				assert player['nickname'] == expected
 			data = websocket2.receive_json()
 			for player, expected in zip(data['players'], expectedPlayers):
-				assert player['nickName'] == expected
+				assert player['nickname'] == expected
 
-			response = startGame_post(1, client)
+			response = start_game_post(1, client)
 			assert response.status_code == 200
 			websocket2.close()
 			data = websocket1.receive_json()
 			for player, expected in zip(data['players'], expectedPlayers):
-				assert player['nickName'] == expected
+				assert player['nickname'] == expected
 			websocket1.close()
 		except KeyboardInterrupt:
 			websocket2.close()
@@ -106,9 +106,9 @@ def test_move():
 
 		roll = random.randint(1,6)
 	with db_session:
-		current_player = db.Game.get(game_id=game_id).currentPlayer
-		current_player_nickName = current_player.nickName
-		next_player = current_player.nextPlayer
+		current_player = db.Lobby.get(lobby_id=lobby_id).game.current_player
+		current_player_nickName = current_player.nickname
+		next_player = current_player.next_player
 
 	with client.websocket_connect("/gameBoard/" + str(current_player.player_id)) as websocket1:
 		data = websocket1.receive_json()
@@ -116,8 +116,8 @@ def test_move():
 			#data = websocket1.receive_json()
 			data = websocket2.receive_json()
 			try:
-				assert current_player_nickName == data['currentPlayer']
-				response = rollDice_post(current_player.player_id, roll, client)
+				assert current_player_nickName == data["current_player"]
+				response = roll_dice_post(current_player.player_id, roll, client)
 				assert (response.status_code == 200)
 				print("RESPONSE: ",response.json())
 				possible_moves = response.json()['moves']

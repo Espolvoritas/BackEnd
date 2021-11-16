@@ -19,7 +19,7 @@ def test_no_lobby():
 		try:
 			data = websocket1.receive_json()
 			for player in data['players']:
-				assert player['nickName'] == host
+				assert player['nickname'] == host
 				with pytest.raises(WebSocketDisconnect, match='1008'):
 					with client.websocket_connect("/lobby/2"):
 						raise WebSocketDisconnect(1000)
@@ -34,7 +34,7 @@ def test_invalid_player():
 		try:
 			data = websocket1.receive_json()
 			for player in data['players']:
-				assert player['nickName'] == host
+				assert player['nickname'] == host
 			with pytest.raises(WebSocketDisconnect, match='1008'):
 				with client.websocket_connect("/lobby/2"):
 					raise WebSocketDisconnect(1000)
@@ -52,10 +52,10 @@ def test_two_lobbys():
 		try:
 			data = websocket1.receive_json()
 			for player in data['players']:
-				assert player['nickName'] == host1
+				assert player['nickname'] == host1
 			data = websocket2.receive_json()
 			for player in data['players']:
-				assert player['nickName'] == host2
+				assert player['nickname'] == host2
 			websocket2.close()
 			websocket1.close()
 		except KeyboardInterrupt:
@@ -70,7 +70,7 @@ def test_duplicate():
 		try:
 			data = websocket1.receive_json()
 			for player in data['players']:
-				assert player['nickName'] == host
+				assert player['nickname'] == host
 			with pytest.raises(WebSocketDisconnect, match='1008'):
 				with client.websocket_connect("/lobby/1") as websocket2:
 					raise WebSocketDisconnect(1000)
@@ -81,8 +81,8 @@ def test_duplicate():
 def test_leave_host():
 	db.clear_tables()
 	host = get_random_string(6)
-	game_id = create_game_post(host, client).json()['game_id']
-	expectedPlayers = create_players(1, game_id)
+	lobby_id = create_game_post(host, client).json()['lobby_id']
+	expectedPlayers = create_players(1, lobby_id)
 	expectedPlayers.insert(0,host)
 	with client.websocket_connect("/lobby/1") as websocket1, \
 		pytest.raises(WebSocketDisconnect, match='1001'):
@@ -90,11 +90,11 @@ def test_leave_host():
 			try:
 				data = websocket1.receive_json()
 				for player, expected in zip(data['players'], expectedPlayers):
-					assert player['nickName'] == expected
+					assert player['nickname'] == expected
 				data = websocket2.receive_json()
 
 				for player, expected in zip(data['players'], expectedPlayers):
-					assert player['nickName'] == expected
+					assert player['nickname'] == expected
 				websocket1.close()
 				data = websocket2.receive_json()
 				websocket2.close()
@@ -105,23 +105,23 @@ def test_leave_host():
 def test_get_two_players():
 	db.clear_tables()
 	host = get_random_string(6)
-	game_id = create_game_post(host, client).json()['game_id']
-	expectedPlayers = create_players(1, game_id)
+	lobby_id = create_game_post(host, client).json()['lobby_id']
+	expectedPlayers = create_players(1, lobby_id)
 	expectedPlayers.insert(0,host)
 	with client.websocket_connect("/lobby/1") as websocket1, \
 		client.websocket_connect("/lobby/2") as websocket2:
 		try:
 			data = websocket1.receive_json()
 			for player, expected in zip(data['players'], expectedPlayers):
-				assert player['nickName'] == expected
+				assert player['nickname'] == expected
 			data = websocket2.receive_json()
 			for player, expected in zip(data['players'], expectedPlayers):
 				print(player)
-				assert player['nickName'] == expected
+				assert player['nickname'] == expected
 			websocket2.close()
 			data = websocket1.receive_json()
 			for player, expected in zip(data['players'], expectedPlayers):
-				assert player['nickName'] == expected
+				assert player['nickname'] == expected
 			websocket1.close()
 		except KeyboardInterrupt:
 			websocket2.close()

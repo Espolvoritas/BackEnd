@@ -14,16 +14,16 @@ client = TestClient(app)
 def test_joinColors():
 	db.clear_tables()
 	host = get_random_string(6)
-	game_id = create_game_post(host, client).json()['game_id']
-	expectedPlayers = create_players(1,game_id)
+	lobby_id = create_game_post(host, client).json()['lobby_id']
+	expectedPlayers = create_players(1,lobby_id)
 	expectedPlayers.insert(0,host)
 
 	with client.websocket_connect("/lobby/1") as websocket1, \
 		client.websocket_connect("/lobby/2") as websocket2:
 		try:
 			with db_session:
-				player1 = db.Player.get(nickName=expectedPlayers[0])
-				player2 = db.Player.get(nickName=expectedPlayers[1])
+				player1 = db.Player.get(nickname=expectedPlayers[0])
+				player2 = db.Player.get(nickname=expectedPlayers[1])
 
 				color1, color2 = player1.color, player2.color
 
@@ -32,12 +32,12 @@ def test_joinColors():
 			
 			data = websocket1.receive_json()
 			for player, expected in zip(data['players'], expectedPlayers):
-				assert player['nickName'] == expected
+				assert player['nickname'] == expected
 				assert player['Color'] not in data['colors']
 
 			data2 = websocket2.receive_json()
 			for player, expected in zip(data2['players'], expectedPlayers):
-				assert player['nickName'] == expected
+				assert player['nickname'] == expected
 				assert player['Color'] not in data2['colors']
 
 			
@@ -46,7 +46,7 @@ def test_joinColors():
 
 			data = websocket1.receive_json()
 			for player, expected in zip(data['players'], expectedPlayers):
-				assert player['nickName'] == expected
+				assert player['nickname'] == expected
 				assert player['Color'] not in data['colors']
 			websocket1.close()
 		except KeyboardInterrupt:
@@ -57,14 +57,14 @@ def test_joinColors():
 def test_change_color():
 	db.clear_tables()
 	host = get_random_string(6)
-	game_id = create_game_post(host, client).json()['game_id']
+	lobby_id = create_game_post(host, client).json()['lobby_id']
 	
 	with client.websocket_connect("/lobby/1") as websocket1:
-		expectedPlayers = create_players(1,game_id)
+		expectedPlayers = create_players(1,lobby_id)
 		expectedPlayers.insert(0,host)
 		with db_session:
-				player1 = db.Player.get(nickName=expectedPlayers[0])
-				player2 = db.Player.get(nickName=expectedPlayers[1])
+				player1 = db.Player.get(nickname=expectedPlayers[0])
+				player2 = db.Player.get(nickname=expectedPlayers[1])
 				player1id = player1.player_id
 				player2id = player2.player_id
 				color1, color2 = player1.color.color_id, player2.color.color_id
@@ -79,7 +79,7 @@ def test_change_color():
 				assert color2 not in data1['colors']
 
 				for player, expected, colors in zip(data['players'], expectedPlayers, expected_colors):
-					assert player['nickName'] == expected
+					assert player['nickname'] == expected
 					assert player['Color'] == colors
 
 				data2 = websocket2.receive_json()
@@ -88,11 +88,11 @@ def test_change_color():
 				assert data1 == data2
 
 				for player, expected, colors in zip(data2['players'], expectedPlayers, expected_colors):
-					assert player['nickName'] == expected
+					assert player['nickname'] == expected
 					assert player['Color'] == colors
 
 				new_color1 = int(random.choice(data1['colors']))
-				response = pickColor_put(player1id, new_color1, client)
+				response = pick_color_put(player1id, new_color1, client)
 				assert response.status_code == 200
 
 				data = websocket1.receive_json()
@@ -104,7 +104,7 @@ def test_change_color():
 				assert color1 in data2['colors']
 
 				new_color2 = int(random.choice(data2['colors']))
-				response = pickColor_put(player2id, new_color2, client)
+				response = pick_color_put(player2id, new_color2, client)
 				assert response.status_code == 200
 
 				data = websocket1.receive_json()
@@ -127,14 +127,14 @@ def test_change_color():
 def test_taken_color():
 	db.clear_tables()
 	host = get_random_string(6)
-	game_id = create_game_post(host, client).json()['game_id']
+	lobby_id = create_game_post(host, client).json()['lobby_id']
 	
 	with client.websocket_connect("/lobby/1") as websocket1:
-		expectedPlayers = create_players(1,game_id)
+		expectedPlayers = create_players(1,lobby_id)
 		expectedPlayers.insert(0,host)
 		with db_session:
-				player1 = db.Player.get(nickName=expectedPlayers[0])
-				player2 = db.Player.get(nickName=expectedPlayers[1])
+				player1 = db.Player.get(nickname=expectedPlayers[0])
+				player2 = db.Player.get(nickname=expectedPlayers[1])
 				player1id = player1.player_id
 				player2id = player2.player_id
 				color1, color2 = player1.color.color_id, player2.color.color_id
@@ -150,7 +150,7 @@ def test_taken_color():
 				assert (color2 not in data1['colors'])
 
 				for player, expected, colors in zip(data['players'], expectedPlayers, expected_colors):
-					assert (player['nickName'] == expected)
+					assert (player['nickname'] == expected)
 					assert (player['Color'] == colors)
 
 				data2 = websocket2.receive_json()
@@ -159,11 +159,11 @@ def test_taken_color():
 				assert (data1 == data2)
 
 				for player, expected, colors in zip(data2['players'], expectedPlayers, expected_colors):
-					assert (player['nickName'] == expected)
+					assert (player['nickname'] == expected)
 					assert (player['Color'] == colors)
 
 				new_color1 = color2
-				response = pickColor_put(player1id, new_color1, client)
+				response = pick_color_put(player1id, new_color1, client)
 				assert (response.status_code == 400)
 
 				websocket2.close()

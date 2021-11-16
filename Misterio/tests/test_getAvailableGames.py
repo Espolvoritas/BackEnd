@@ -24,16 +24,16 @@ def test_get_single_game():
     db.clear_tables()
     #Create a game
     with db_session:
-        hostPlayer = db.Player(nickName="IAmHost")
+        hostPlayer = db.Player(nickname="IAmHost")
         flush()
-        newGame = db.Game(name="game1", host=hostPlayer, isStarted=False)
+        newGame = db.Lobby(name="game1", host=hostPlayer, is_started=False)
         flush()
-        newGame.addPlayer(hostPlayer)
+        newGame.add_player(hostPlayer)
         gamejson = {}
         gamejson["name"] = newGame.name
-        gamejson["id"] = newGame.game_id
-        gamejson["players"] = int(newGame.playerCount)
-        gamejson["host"] = newGame.host.nickName
+        gamejson["id"] = newGame.lobby_id
+        gamejson["players"] = int(newGame.player_count)
+        gamejson["host"] = newGame.host.nickname
         gamejson["password"] = False
     response = client.get("/lobby/availableGames")
 
@@ -48,7 +48,7 @@ def test_various_games():
         hosts = []
         for i in range(6):
             hostname=f"IAmHost{i}"
-            hostPlayer = db.Player(nickName=hostname)
+            hostPlayer = db.Player(nickname=hostname)
             hosts.append(hostPlayer)
         flush()
         games = []
@@ -56,15 +56,15 @@ def test_various_games():
         #Create games and join hosts
         for i in range(6):
             gamename=f"game{i}"
-            game = db.Game(name=gamename, host=hosts[i], isStarted=False)
-            game.addPlayer(hosts[i])
+            game = db.Lobby(name=gamename, host=hosts[i], is_started=False)
+            game.add_player(hosts[i])
             games.append(game)
         flush()
 
         #Create random players 
         players = []
         for i in range(24):
-            player = db.Player(nickName=get_random_string(7))
+            player = db.Player(nickname=get_random_string(7))
             players.append(player)
         flush()
         
@@ -74,7 +74,7 @@ def test_various_games():
         for i in range(6):
             for j in range(4):
                 n = prev
-                games[i].addPlayer(players[n])
+                games[i].add_player(players[n])
                 n += 1
                 prev = n
         flush()
@@ -83,9 +83,9 @@ def test_various_games():
             gamejson = {}
             g = games[i]
             gamejson["name"] = g.name
-            gamejson["id"] = g.game_id
-            gamejson["players"] = int(g.playerCount)
-            gamejson["host"] = g.host.nickName
+            gamejson["id"] = g.lobby_id
+            gamejson["players"] = int(g.player_count)
+            gamejson["host"] = g.host.nickname
             gamejson["password"] = False
             gamesjson.append(gamejson)
         flush()
@@ -100,7 +100,7 @@ def test_full_games():
         hosts = []
         for i in range(6):
             hostname=f"IAmHost{i}"
-            hostPlayer = db.Player(nickName=hostname)
+            hostPlayer = db.Player(nickname=hostname)
             hosts.append(hostPlayer)
         flush()
         games = []
@@ -108,15 +108,15 @@ def test_full_games():
         #Create games and join hosts
         for i in range(6):
             gamename=f"game{i}"
-            game = db.Game(name=gamename, host=hosts[i], isStarted=False)
-            game.addPlayer(hosts[i])
+            game = db.Lobby(name=gamename, host=hosts[i], is_started=False)
+            game.add_player(hosts[i])
             games.append(game)
         flush()
 
         #Create random players 
         players = []
         for i in range(30):
-            player = db.Player(nickName=get_random_string(7))
+            player = db.Player(nickname=get_random_string(7))
             players.append(player)
         flush()
         
@@ -126,7 +126,7 @@ def test_full_games():
         for i in range(6):
             for j in range(5):
                 n = prev
-                games[i].addPlayer(players[n])
+                games[i].add_player(players[n])
                 n += 1
                 prev = n
         flush()
@@ -140,7 +140,7 @@ def test_full_and_available():
         hosts = []
         for i in range(6):
             hostname=f"IAmHost{i}"
-            hostPlayer = db.Player(nickName=hostname)
+            hostPlayer = db.Player(nickname=hostname)
             hosts.append(hostPlayer)
         flush()
         games = []
@@ -148,15 +148,15 @@ def test_full_and_available():
         #Create games and join hosts
         for i in range(6):
             gamename=f"game{i}"
-            game = db.Game(name=gamename, host=hosts[i], isStarted=False)
-            game.addPlayer(hosts[i])
+            game = db.Lobby(name=gamename, host=hosts[i], is_started=False)
+            game.add_player(hosts[i])
             games.append(game)
         flush()
 
         #Create random players 
         players = []
         for i in range(30):
-            player = db.Player(nickName=get_random_string(7))
+            player = db.Player(nickname=get_random_string(7))
             players.append(player)
         flush()
         
@@ -166,7 +166,7 @@ def test_full_and_available():
         for i in range(4):
             for j in range(5):
                 n = prev
-                games[i].addPlayer(players[n])
+                games[i].add_player(players[n])
                 n += 1
                 prev = n
         flush()
@@ -175,9 +175,9 @@ def test_full_and_available():
             gamejson = {}
             g = games[i]
             gamejson["name"] = g.name
-            gamejson["id"] = g.game_id
-            gamejson["players"] = int(g.playerCount)
-            gamejson["host"] = g.host.nickName
+            gamejson["id"] = g.lobby_id
+            gamejson["players"] = int(g.player_count)
+            gamejson["host"] = g.host.nickname
             gamejson["password"] = False
             gamesjson.append(gamejson)
     response = client.get("/lobby/availableGames")
