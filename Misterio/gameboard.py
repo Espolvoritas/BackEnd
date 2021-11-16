@@ -16,34 +16,8 @@ logger = logging.getLogger("gameboard")
 
 game_manager = mng.GameBoardManager()
 
-#crashes if position is not valid
-def cellByCoordinates(x, y):
-	return dbget(c for c in db.Cell if c.x == x and c.y == y)
 
-@db_session
-def positionList(lobbyID):
-	positionList = []
-	game = db.Game.get(game_id=lobbyID)
-	for player in list(game.players):
-		positionList.append({"player_id": player.player_id, "color": player.color.color_id ,"x" : player.location.y, "y": player.location.x})
-	return positionList
-
-@db_session
-def getReachable(player_id):
-	moves = []
-	player = db.Player.get(player_id=player_id)
-	reachableCells = player.location.getReachable(player.currentDiceRoll)
-	if reachableCells is not None:
-		for cell, distance in reachableCells:
-			option = {"x": 0, "y": 0, "remaining": 0}
-			#Inverted because keep logic working
-			option["x"] = cell.y
-			option["y"] = cell.x
-			option["remaining"] = distance
-			moves.append(option)
-	return moves
-
-#todo check cost < roll and check newPosition is in movement range
+#todo check cost < roll and check new_position is in movement range
 @gameBoard.post("/moves", status_code=status.HTTP_200_OK)
 async def get_moves(player_id: int = Body(...), x: int = Body(...), y: int = Body(...), remaining: int = Body(...)):
 	room = 0
@@ -64,49 +38,6 @@ async def get_moves(player_id: int = Body(...), x: int = Body(...), y: int = Bod
 			moves=[]
 	await gameBoard_manager.lobby_broadcast({"code": WS_POS_LIST,"positions":positionList(player.lobby.game_id)}, player.lobby.game_id)
 	return {"moves" : moves, "room": room}
-
-def getRoomID(roomName: str):
-	for room in db.Room:
-		if room.name == roomName:
-			return room.value
-
-async def update_turn(lobbyID: int):
-	await gameBoard_manager.lobby_broadcast({"code": WS_CURR_PLAYER, "currentPlayer": get_next_turn(lobbyID)}, lobbyID)
-
-@db_session
-def get_next_turn(lobbyID: int):
-	lobby = db.Game.get(game_id=lobbyID)
-	currentPlayer = lobby.currentPlayer
-	lobby.currentPlayer = currentPlayer.nextPlayer
-	if lobby.currentPlayer.alive:
-		return lobby.currentPlayer.nickName
-	else:	
-		return get_next_turn(lobbyID)
-
-@db_session
-def get_current_turn(lobbyID: int):
-	lobby = db.Game.get(game_id=lobbyID)
-	return lobby.currentPlayer.nickName
-
-@db_session
-def player_in_turn(userID: int):
-	player = db.Player.get(player_id=userID)
-	lobby = player.lobby
-	return userID == lobby.currentPlayer.player_id
-
-@db_session
-def get_card_list(userID: int):
-	cards = list(db.Player.get(player_id=userID).cards)
-	return list(c.cardId for c in cards)
-
-@db_session
-def all_dead(lobbyID: int):
-	game = db.Game.get(game_id=lobbyID)
-	players = game.players
-	for player in players:
-		if player.alive:
-			return False
-	return True
 
 @gameBoard.post("/accuse")
 async def accuse(room: int = Body(...), monster: int = Body(...), victim: int = Body(...), userID: int = Body(...)):
@@ -155,7 +86,6 @@ async def rollDice(playerId: int = Body(...), roll: int = Body(...)):
 		return {"moves" : getReachable(playerId)}
 	else:
 		raise HTTPException(status_code=403, detail="Player can't roll dice outside his/her turn.")
-
 
 @gameBoard.post("/checkSuspicion", status_code=status.HTTP_200_OK)
 async def check_suspicion(playerId: int = Body(...), victimId: int = Body(...), culpritId: int = Body(...)):
