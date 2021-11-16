@@ -39,7 +39,7 @@ class Lobby(db.Entity):
     lobby_id = PrimaryKey(int, auto=True) 
     name = Required(str)
     player_count = Required(int, default=0)
-
+    is_started = Required(bool, default=False)
     #Relationship attributes
     host = Required('Player', reverse='host_of')
     players = Set('Player', reverse='lobby')
@@ -122,7 +122,6 @@ class Player(db.Entity):
     alive = Required(bool, default=True)
     current_dice_roll = Optional(int, default=0)
     trapped = Optional(bool)
-    inRoom = Optional(bool)
     
     #Relationship attributes
     color = Optional(Color, reverse='players')
@@ -182,6 +181,11 @@ class Cell(db.Entity):
 
     def get_reachable(self, moves):
 
+        if moves == 0:
+            return [(fn, 0) for fn in self.get_free_neighbors()]
+        if moves > 0:
+            reachable = [(n, moves-1) for n in self.get_neighbors()]
+            reachable = reachable + [(fn, moves) for fn in self.get_free_neighbors()]
             already = {e for e, c in reachable} | set([self])
             special = {e for e, c in reachable if e.is_special()}         
             current = list(reachable)
