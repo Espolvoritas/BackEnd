@@ -2,19 +2,19 @@ from fastapi import APIRouter, status, WebSocket, WebSocketDisconnect, HTTPExcep
 from pony.orm import db_session, select
 from asyncio import sleep
 import logging
-import Misterio.database as db
+
 from Misterio.constants import *
-from Misterio.lobby import ConnectionManager
-from pony.orm import get as dbget
+from Misterio.functions import *
+import Misterio.database as db
+import Misterio.manager as mng
+
 from starlette.responses import Response
 
-class GameBoardManager(ConnectionManager):
-	pickedCard_id = None 
-		
+
 gameBoard = APIRouter(prefix="/gameBoard")
 logger = logging.getLogger("gameboard")
 
-gameBoard_manager = GameBoardManager()
+game_manager = mng.GameBoardManager()
 
 #crashes if position is not valid
 def cellByCoordinates(x, y):

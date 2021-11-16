@@ -1,133 +1,16 @@
 from fastapi import APIRouter, HTTPException, status, WebSocket, WebSocketDisconnect ,Body
 from pony.orm import db_session, flush, select
-from typing import List, TypedDict
 from starlette.responses import Response
 import logging
 import asyncio
 
 import Misterio.database as db
+import Misterio.manager as mng
 
 game = APIRouter(prefix="/lobby")
 logger = logging.getLogger("lobby")
 
-class userConnections(TypedDict):
-	websocket: WebSocket
-	userID: int
-
-class lobbyConnections(TypedDict):
-	lobbyID: int
-	websockets: List[WebSocket]
-
-class ConnectionManager:
-	def __init__(self):
-		self.active_connections: userConnections = {}
-		self.active_lobbys: lobbyConnections = {}
-
-	def exists(self, userID):
-		return userID in self.active_connections.values()
-
-	def getWebsocket(self, userID):
-		key_list = list(self.active_connections.keys())
-		val_list = list(self.active_connections.values())
-		position = val_list.index(userID)
-		return key_list[position]
-
-	async def connect(self, websocket: WebSocket, userID):
-		await websocket.accept()
-		self.active_connections[websocket] = userID
-		with db_session:
-			lobby = db.Player.get(player_id=userID).lobby
-			if lobby.game_id not in self.active_lobbys:
-				self.active_lobbys[lobby.game_id] = list()
-			self.active_lobbys[lobby.game_id].append(websocket)
-
-	async def disconnect_everyone(self, websocket: WebSocket,lobbyID: int):
-		connections = self.active_lobbys[lobbyID].copy()
-		for connection in connections:
-			if connection != websocket:
-				await connection.close(code=status.WS_1001_GOING_AWAY)
-
-	async def host_disconnect(self, websocket: WebSocket, lobbyID: int):
-		if websocket in self.active_connections.keys():
-			userID = self.active_connections[websocket]
-			del self.active_connections[websocket]
-			self.active_lobbys[lobbyID].remove(websocket)
-			with db_session(optimistic=False):
-				game = db.Game.get(game_id=lobbyID)
-				if game is not None:
-					if not game.isStarted:
-						game.delete()
-						db.Player.get(player_id=userID).delete()
-
-	def disconnect(self, websocket: WebSocket, lobbyID: int):
-		if websocket in self.active_connections.keys():
-			userID = self.active_connections[websocket]
-			del self.active_connections[websocket]
-			self.active_lobbys[lobbyID].remove(websocket)
-			with db_session(optimistic=False):
-				game = db.Game.get(game_id=lobbyID)
-				if game is not None:
-					if not game.isStarted:
-						db.Player.get(player_id=userID).delete()
-						game.playerCount -= 1
-
-	def get_websocket(self, playerId: int, lobbyId):
-		if lobbyId in self.active_lobbys.keys():
-			for connection in self.active_lobbys[lobbyId]:
-				if self.active_connections[connection] == playerId:
-					return connection
-
-	async def send_personal_message(self, message: List[str], websocket: WebSocket):
-		await websocket.send_json(message)
-
-
-	async def broadcast(self, message: List[str]):
-		for connection in self.active_connections.keys():
-			await connection.send_json(message)
-
-	async def lobby_broadcast(self, message: List[str], lobbyID: int):
-		if lobbyID in self.active_lobbys.keys():
-			for connection in self.active_lobbys[lobbyID]:
-				await connection.send_json(message)
-
-	async def almost_lobby_broadcast(self, message: List[str], websocket: WebSocket,lobbyID: int):
-		if lobbyID in self.active_lobbys.keys():
-			for connection in self.active_lobbys[lobbyID]:
-				if websocket != connection:
-					await connection.send_json(message)
-
-	async def getPlayers(self, lobbyID: int):
-		player_list = []
-		colors = get_colors(lobbyID)
-		response = {}
-		if lobbyID in self.active_lobbys.keys():
-			for connection in self.active_lobbys[lobbyID]:
-				with db_session:
-					player = db.Player.get(player_id=self.active_connections[connection])
-				#If we've gotten this far this should never happen, but still
-				if player is None or player.lobby is None:
-					await connection.close(code=status.WS_1008_POLICY_VIOLATION)
-					return
-				else:
-					playerjson = {}
-					playerjson["nickName"] = player.nickName
-					playerjson["Color"] = player.color.color_id
-					player_list.append(playerjson)
-		response['colors'] = colors
-		response['players'] = player_list
-		return response
-		
-manager = ConnectionManager()
-
-def get_colors(gameId):
-	color_list = []
-	with db_session:
-		lobby = db.Game.get(game_id=gameId)
-		if lobby:
-			color_query = lobby.getAvailableColors()
-			for c in color_query:
-				color_list.append(c.color_id)
-	return color_list
+manager = mng.ConnectionManager()
 
 @game.post("/createNew", status_code=status.HTTP_201_CREATED)
 async def createNewGame(name: str = Body(...), host: str = Body(...)):
