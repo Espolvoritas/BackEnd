@@ -13,33 +13,33 @@ client = TestClient(app)
 def test_envelope():
 	db.clear_tables()
 	host = get_random_string(6)
-	game_id = create_game_post(host, client).json()['game_id']
-	expectedPlayers = create_players(1,game_id)
+	lobby_id = create_game_post(host, client).json()['lobby_id']
+	expectedPlayers = create_players(1,lobby_id)
 	expectedPlayers.insert(0,host)
 	with client.websocket_connect("/lobby/1") as websocket1, \
 		client.websocket_connect("/lobby/2") as websocket2:
 		try:
 			data = websocket1.receive_json()
 			for player, expected in zip(data['players'], expectedPlayers):
-				assert player['nickName'] == expected
+				assert player['nickname'] == expected
 			data = websocket2.receive_json()
 			for player, expected in zip(data['players'], expectedPlayers):
-				assert player['nickName'] == expected
+				assert player['nickname'] == expected
 
-			response = startGame_post(1, client)
+			response = start_game_post(1, client)
 			assert response.status_code == 200
 			with db_session:
 				playerCards = []
-				game = db.Game.get(game_id=game_id)
+				lobby = db.Lobby.get(lobby_id=lobby_id)
 				for player in expectedPlayers:
-					playerCards.append(list(db.Player.get(nickName=player).cards))
-				assert game.culprit not in playerCards
-				assert game.room not in playerCards
-				assert game.victim not in playerCards
+					playerCards.append(list(db.Player.get(nickname=player).cards))
+				assert lobby.game.monster not in playerCards
+				assert lobby.game.room not in playerCards
+				assert lobby.game.victim not in playerCards
 			websocket2.close()
 			data = websocket1.receive_json()
 			for player, expected in zip(data['players'], expectedPlayers):
-				assert player['nickName'] == expected
+				assert player['nickname'] == expected
 			websocket1.close()
 		except KeyboardInterrupt:
 			websocket2.close()
@@ -49,31 +49,31 @@ def test_envelope():
 def test_duplication():
 	db.clear_tables()
 	host = get_random_string(6)
-	game_id = create_game_post(host, client).json()['game_id']
-	expectedPlayers = create_players(1,game_id)
+	lobby_id = create_game_post(host, client).json()['lobby_id']
+	expectedPlayers = create_players(1,lobby_id)
 	expectedPlayers.insert(0,host)
 	with client.websocket_connect("/lobby/1") as websocket1, \
 		client.websocket_connect("/lobby/2") as websocket2:
 		try:
 			data = websocket1.receive_json()
 			for player, expected in zip(data['players'], expectedPlayers):
-				assert player['nickName'] == expected
+				assert player['nickname'] == expected
 			data = websocket2.receive_json()
 			for player, expected in zip(data['players'], expectedPlayers):
-				assert player['nickName'] == expected
+				assert player['nickname'] == expected
 
-			response = startGame_post(1, client)
+			response = start_game_post(1, client)
 			assert response.status_code == 200
 			with db_session:
-				game = db.Game.get(game_id=game_id)
-				cards1 = list(db.Player.get(nickName=host).cards)
-				cards2 = list(db.Player.get(nickName=expectedPlayers[1]).cards)
+				game = db.Lobby.get(lobby_id=lobby_id)
+				cards1 = list(db.Player.get(nickname=host).cards)
+				cards2 = list(db.Player.get(nickname=expectedPlayers[1]).cards)
 				for card in cards1:
 					assert card not in cards2
 			websocket2.close()
 			data = websocket1.receive_json()
 			for player, expected in zip(data['players'], expectedPlayers):
-				assert player['nickName'] == expected
+				assert player['nickname'] == expected
 			websocket1.close()
 		except KeyboardInterrupt:
 			websocket2.close()
@@ -82,55 +82,55 @@ def test_duplication():
 def test_random_first():
 	db.clear_tables()
 	host = get_random_string(6)
-	game_id = create_game_post(host, client).json()['game_id']
-	expectedPlayers = create_players(1,game_id)
+	lobby_id = create_game_post(host, client).json()['lobby_id']
+	expectedPlayers = create_players(1,lobby_id)
 	expectedPlayers.insert(0,host)
 	with client.websocket_connect("/lobby/1") as websocket1, \
 		client.websocket_connect("/lobby/2") as websocket2:
 		try:
 			data = websocket1.receive_json()
 			for player, expected in zip(data['players'], expectedPlayers):
-				assert player['nickName'] == expected
+				assert player['nickname'] == expected
 			data = websocket2.receive_json()
 			for player, expected in zip(data['players'], expectedPlayers):
-				assert player['nickName'] == expected
+				assert player['nickname'] == expected
 
-			response = startGame_post(1, client)
+			response = start_game_post(1, client)
 			assert response.status_code == 200
 			with db_session:
-				first_player = db.Game.get(game_id=game_id).currentPlayer
+				first_player = db.Lobby.get(lobby_id=lobby_id).game.current_player
 			websocket2.close()
 			data = websocket1.receive_json()
 			for player, expected in zip(data['players'], expectedPlayers):
-				assert player['nickName'] == expected
+				assert player['nickname'] == expected
 			websocket1.close()
 		except KeyboardInterrupt:
 			websocket2.close()
 			websocket1.close()
 	db.clear_tables()
 	host = get_random_string(6)
-	game_id = create_game_post(host, client).json()['game_id']
-	expectedPlayers = create_players(1,game_id)
+	lobby_id = create_game_post(host, client).json()['lobby_id']
+	expectedPlayers = create_players(1,lobby_id)
 	expectedPlayers.insert(0,host)
 	with client.websocket_connect("/lobby/1") as websocket1, \
 		client.websocket_connect("/lobby/2") as websocket2:
 		try:
 			data = websocket1.receive_json()
 			for player, expected in zip(data['players'], expectedPlayers):
-				assert player['nickName'] == expected
+				assert player['nickname'] == expected
 			data = websocket2.receive_json()
 			for player, expected in zip(data['players'], expectedPlayers):
-				assert player['nickName'] == expected
+				assert player['nickname'] == expected
 
-			response = startGame_post(1, client)
+			response = start_game_post(1, client)
 			assert response.status_code == 200
 			with db_session:
-				second_player = db.Game.get(game_id=game_id).currentPlayer
+				second_player = db.Lobby.get(lobby_id=lobby_id).game.current_player
 			assert first_player != second_player
 			websocket2.close()
 			data = websocket1.receive_json()
 			for player, expected in zip(data['players'], expectedPlayers):
-				assert player['nickName'] == expected
+				assert player['nickname'] == expected
 			websocket1.close()
 		except KeyboardInterrupt:
 			websocket2.close()
