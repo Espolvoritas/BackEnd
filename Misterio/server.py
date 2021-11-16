@@ -1,14 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
 
 from Misterio.lobby import lobby
 from Misterio.gameboard import gameBoard
 
 app = FastAPI()
-
-# Standart html file to render on server startup
-htmlfilepath = 'test.html'
 
 app.add_middleware(
     CORSMiddleware,
@@ -23,4 +19,4 @@ app.include_router(gameBoard)
 
 @app.get("/")
 async def get():
-    return FileResponse(htmlfilepath)
+    return {"status": "Server start successful"}
