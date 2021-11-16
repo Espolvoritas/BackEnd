@@ -138,8 +138,8 @@ class Player(db.Entity):
     def set_color(self, color):
         self.color = color
 
-    def set_next(self, nextPlayer):
-        self.nextPlayer = nextPlayer
+    def set_next(self, next_player):
+        self.next_player = next_player
 
     def set_roll(self, dice_roll):
         self.current_dice_roll = dice_roll
