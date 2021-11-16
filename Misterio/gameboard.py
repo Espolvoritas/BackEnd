@@ -155,8 +155,8 @@ async def check_player_cards(players: list, suspicion_player: str, suspicion: li
 			'suspicion_player': suspicion_player,
 			'response_player': response_player
 		}
-		#Broadcast suspicion status to all players
-		await game_manager.lobby_broadcast(response_broadcast, lobby_id)
+		#Broadcast suspicion status to all players except who responded and who made the suspicion
+		await game_manager.almost_lobby_broadcast(response_broadcast, [res_websocket, sus_websocket], lobby_id)
 	
 	return suspicion_card, response_player
 
