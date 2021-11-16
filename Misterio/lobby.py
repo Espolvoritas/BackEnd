@@ -7,13 +7,13 @@ import asyncio
 import Misterio.database as db
 import Misterio.manager as mng
 
-game = APIRouter(prefix="/lobby")
+lobby = APIRouter(prefix="/lobby")
 logger = logging.getLogger("lobby")
 
 manager = mng.ConnectionManager()
 
-@game.post("/createNew", status_code=status.HTTP_201_CREATED)
-async def createNewGame(name: str = Body(...), host: str = Body(...)):
+@lobby.post("/createNew", status_code=status.HTTP_201_CREATED)
+async def create_new_game(name: str = Body(...), host: str = Body(...)):
     with db_session:
         if db.Game.get(name=name) is not None:
             raise HTTPException(status_code=400, detail="The game name is already in use")
@@ -23,9 +23,10 @@ async def createNewGame(name: str = Body(...), host: str = Body(...)):
         new_game.addPlayer(new_player)
         return {"game_id": new_game.game_id, "player_id": new_player.player_id}
 
-@game.get("/availableGames", status_code=status.HTTP_200_OK)
-async def getAvailableGames():
-    gamelist = []
+
+@lobby.get("/availableGames", status_code=status.HTTP_200_OK)
+async def get_available_games():
+    game_list = []
     with db_session:
         games_query = select(g for g in db.Game if ((g.playerCount < 6)and not (g.isStarted))).order_by(db.Game.name)    
         for g in games_query:
@@ -67,8 +68,8 @@ async def handleLobby(websocket: WebSocket, userID: int):
 			await asyncio.sleep(0.1)
 			await manager.lobby_broadcast(await manager.getPlayers(lobby.game_id), lobby.game_id)
 
-@game.post("/startGame", status_code=status.HTTP_200_OK)
-async def startGame(userID: int = Body(...)):
+@lobby.post("/startGame", status_code=status.HTTP_200_OK)
+async def start_game(player_id: int = Body(...)):
 	with db_session:
 		host = db.Player.get(player_id=userID)
 		lobby = host.lobby
@@ -86,8 +87,9 @@ async def startGame(userID: int = Body(...)):
 			await manager.lobby_broadcast("STATUS_GAME_STARTED", lobby.game_id)
 	return {}
 
-@game.post("/joinCheck", status_code=status.HTTP_200_OK)
-async def joinGame(gameId: int = Body(...), playerNickname: str = Body(...)):
+
+@lobby.post("/joinCheck", status_code=status.HTTP_200_OK)
+async def join_lobby(lobby_id: int = Body(...), player_nickname: str = Body(...)):
 
     with db_session:
         chosenGame = db.Game.get(game_id=gameId)
@@ -115,8 +117,8 @@ async def joinGame(gameId: int = Body(...), playerNickname: str = Body(...)):
         else:
             raise HTTPException(status_code=400, detail="Unexpected code reached")
 
-@game.put("/pickColor")
-async def pickColor(player_id: int = Body(...), color: int = Body(...)):
+@lobby.put("/pickColor")
+async def pick_color(player_id: int = Body(...), color: int = Body(...)):
 	with db_session:
 		player = db.Player.get(player_id=player_id)
 		lobby = db.Game.get(game_id=player.lobby.game_id)

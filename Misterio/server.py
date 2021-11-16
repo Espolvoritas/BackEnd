@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 
-from Misterio.lobby import game
+from Misterio.lobby import lobby
 from Misterio.gameboard import gameBoard
 
 app = FastAPI()
@@ -18,7 +18,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(game)
+app.include_router(lobby)
 app.include_router(gameBoard)
 
 @app.get("/")
