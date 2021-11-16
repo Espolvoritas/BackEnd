@@ -81,7 +81,7 @@ async def join_lobby(lobby_id: int = Body(...), player_nickname: str = Body(...)
             chosen_lobby.add_player(new_player)
             new_player_id = new_player.player_id
 
-            return { "nicknameIsValid": True, "player_id": new_player_id, "lobby_idIsValid": True }
+            return { "nickname_is_valid": True, "player_id": new_player_id, "lobby_id_is_valid": True }
 
         else:
             raise HTTPException(status_code=400, detail="Unexpected code reached")
