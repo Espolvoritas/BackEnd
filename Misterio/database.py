@@ -176,6 +176,9 @@ class Cell(db.Entity):
 
     def is_room(self):
         return self.cell_type == 'Room'
+    
+    def is_trap(self):
+        return self.cell_type == 'Trap'
 
     def get_reachable(self, moves):
 
@@ -183,11 +186,9 @@ class Cell(db.Entity):
             special = {e for e, c in reachable if e.is_special()}         
             current = list(reachable)
             new = []
-
             while current:
-
                 for c, d in current:
-                    if not c.isTrap:
+                    if not c.is_trap():
                         if d != 0:
                             new = new + [(n, d-1) for n in c.get_neighbors() if n not in already]
                 reachable = reachable + list(new)
@@ -229,7 +230,7 @@ def fill_cells():
                 cell_index[(cx, cy, t)].cell_type = 'Room'
                 cell_index[(cx, cy, t)].is_room = True
             if 'trap' in t:
-                cell_index[(cx, cy, t)].is_trap = True
+                cell_index[(cx, cy, t)].cell_type = 'Trap'
 
         for c in cells:
             for n in neighbors[c]:
