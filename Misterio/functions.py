@@ -9,6 +9,7 @@ def get_cell_by_coordinates(x, y):
     return select(c for c in db.Cell if c.x == x and c.y == y).first()
 
 def get_room_cell_id(room_name: str):
+<<<<<<< HEAD
     for room in Room:
         if room.name == room_name:
             return room.value
@@ -17,6 +18,15 @@ def get_room_cell_id(room_name: str):
 def get_room_card_id(room_name: str):
     card_id = db.Card.get(card_name=room_name).card_id
     return card_id
+=======
+	for room in Room:
+		if room.name == room_name:
+			return room.value
+>>>>>>> f9c1ea6... Separate room card getter from room cell getter
+
+def get_room_card_id(room_name: str):
+	card_id = db.Card.get(card_name=room_name).card_id
+	return card_id
 
 @db_session
 def get_position_list(lobby_id: int):
