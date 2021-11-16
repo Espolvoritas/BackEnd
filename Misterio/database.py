@@ -245,6 +245,7 @@ def clear_tables():
     Cell.free_neighbors.drop_table(with_all_data=True)
     db.drop_table(Player, if_exists=True, with_all_data=True)
     db.drop_table(Game, if_exists=True, with_all_data=True)
+    db.drop_table(Lobby, if_exists=True, with_all_data=True)
     db.drop_table(Card, if_exists=True, with_all_data=True)
     db.drop_table(Color, if_exists=True, with_all_data=True)
     db.drop_table(Cell, if_exists=True, with_all_data=True)
