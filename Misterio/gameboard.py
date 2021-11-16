@@ -79,11 +79,11 @@ async def roll_dice(player_id: int = Body(...), roll: int = Body(...)):
 async def check_suspicion(player_id: int = Body(...), victim_id: int = Body(...), monster_id: int = Body(...)):
 	with db_session:
 		player = get_player_by_id(player_id)
-		lobby = player.lobby
 		victim = get_card_by_id(victim_id)
 		monster = get_card_by_id(monster_id)
 		if player is None:
 			raise HTTPException(status_code=400, detail="Player does not exist")
+		lobby = player.lobby
 		if lobby is None:
 			raise HTTPException(status_code=403, detail="Player is not in game.")
 		if not player_in_turn(player_id):
