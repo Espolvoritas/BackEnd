@@ -55,7 +55,7 @@ class Lobby(db.Entity):
     
     def get_available_colors(self):
         #Returns a list of type Color elements that have not been assigned
-        player_colors = (select (p.color for p in Player if p.lobby.game_id == self.game_id))
+        player_colors = (select (p.color for p in Player if p.lobby.lobby_id == self.lobby_id))
         colors = list(select(c for c in Color if c not in player_colors))
         return colors
 
@@ -90,19 +90,19 @@ class Game(db.Entity):
             player.cards.add(card)
             player = player.nextPlayer
         min_cards = count(player.cards)
-        players = list(select(p for p in self.players if count(p.cards) == min_cards))
+        players = list(select(p for p in self.lobby.players if count(p.cards) == min_cards))
         self.current_player = choice(players)
 
     def sort_players(self):
-        '''Assign each player who joined the game a `.nextPlayer` randomly.'''
-        shuffled_players = list([p for p in self.players])
+        shuffled_players = list([p for p in self.lobby.players])
+        
         shuffle(shuffled_players)
         for index, player in enumerate(shuffled_players):
             player.set_next(shuffled_players[(index + 1) % len(shuffled_players)])
         self.current_player = shuffled_players[0]
  
     def set_starting_positions(self):
-        players = list(select(p for p in self.players))
+        players = list(select(p for p in self.lobby.players))
         entrances = list(select(c for c in Cell if c.cell_type == 'entrance'))
         shuffle(players)
         shuffle(entrances)
