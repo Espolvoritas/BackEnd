@@ -27,7 +27,7 @@ async def get_moves(player_id: int = Body(...), x: int = Body(...), y: int = Bod
 		if not new_position or player != player.lobby.game.current_player:
 			raise HTTPException(status.HTTP_400_BAD_REQUEST)
 		if new_position.is_room():
-			room = get_room_id(new_position.room_name)
+			room = get_room_cell_id(new_position.room_name)
 			player.set_roll(0)
 		else:
 			player.set_roll(remaining)
@@ -93,7 +93,7 @@ async def check_suspicion(player_id: int = Body(...), victim_id: int = Body(...)
 		if (not victim.is_victim() or not monster.is_monster()):
 			raise HTTPException(status_code=403, detail="Suspicion card types are invalid.")
 		else:
-			room_id = select(c.card_id for c in db.Card if c.is_room()).first()
+			room_id = get_room_card_id(player.location.room_name)
 			players = []
 			currplayer_id = player.next_player.player_id
 			player.set_roll(0)

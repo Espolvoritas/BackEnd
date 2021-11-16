@@ -8,10 +8,14 @@ import Misterio.database as db
 def get_cell_by_coordinates(x, y):
 	return select(c for c in db.Cell if c.x == x and c.y == y).first()
 
-def get_room_id(room_name: str):
+def get_room_cell_id(room_name: str):
 	for room in Room:
 		if room.name == room_name:
 			return room.value
+
+def get_room_card_id(room_name: str):
+	card_id = db.Card.get(card_name=room_name).card_id
+	return card_id
 
 @db_session
 def get_position_list(lobby_id: int):
