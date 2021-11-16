@@ -36,7 +36,11 @@ async def get_moves(player_id: int = Body(...), x: int = Body(...), y: int = Bod
 		if room == 0 and remaining == 0 and "entrance-" not in new_position.cell_type:
 			await game_manager.update_turn(player.lobby.lobby_id)
 			moves=[]
-	await game_manager.lobby_broadcast({"code": WS_POS_LIST,"positions":get_position_list(player.lobby.lobby_id)}, player.lobby.lobby_id)
+	position_broadcast = {
+		"code": WS_POS_LIST,
+		"positions": get_position_list(player.lobby.lobby_id)
+	}
+	await game_manager.lobby_broadcast(position_broadcast, player.lobby.lobby_id)
 	return {"moves" : moves, "room": room}
 
 @gameBoard.post("/accuse")
@@ -47,7 +51,14 @@ async def accuse(room: int = Body(...), monster: int = Body(...), victim: int = 
 			raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="... why?")
 		lobby = player.lobby
 		won = lobby.game.win_check(monster, victim, room)
-		await game_manager.lobby_broadcast({"code": WS_ACCUSATION, "data": {"player": player.nickname, "won": won}}, lobby.lobby_id)
+		status_broadcast = {
+			"code": WS_ACCUSATION,
+			"data": {
+				"player": player.nickname,
+				"won": won
+			}
+		}
+		await game_manager.lobby_broadcast(status_broadcast, lobby.lobby_id)
 		await game_manager.update_turn(lobby.lobby_id)
 		if not won:
 			player.commit_die()
@@ -98,8 +109,16 @@ async def check_suspicion(player_id: int = Body(...), victim_id: int = Body(...)
 				currplayer_id = currplayer.next_player.player_id
 			players.reverse()
 			suspicion = [monster_id, victim_id, room_id]
-	await game_manager.almost_lobby_broadcast({'code': WS_CURR_PLAYER + WS_SUSPICION,
-		'current_player':player.nickname, 'victim': victim_id, 'monster': monster_id, 'room': room_id}, game_manager.get_websocket(player_id,lobby.lobby_id),lobby.lobby_id)
+
+	suspicion_broadcast = {
+		'code': WS_CURR_PLAYER + WS_SUSPICION,
+		'current_player': player.nickname,
+		'victim': victim_id,
+		'monster': monster_id,
+		'room': room_id
+	}
+	websocket = game_manager.get_websocket(player_id,lobby.lobby_id)
+	await game_manager.almost_lobby_broadcast(suspicion_broadcast, websocket,lobby.lobby_id)
 	await game_manager.update_turn(lobby.lobby_id)
 	suspicionCard, response_player = await checkSuspicion_players(players, player.nickname, suspicion, lobby.lobby_id)
 	return {'response_player': response_player, 'suspicionCard': suspicionCard}
@@ -128,11 +147,20 @@ async def checkSuspicion_players(players: list, suspicionPlayer: str, suspicion:
 				suspicionCard = game_manager.pickedCard_id
 				game_manager.pickedCard_id = None
 			else:
-				suspicionCard = matches.pop()
-				responseMessage = {'code': WS_SENT_CARD_NOTIFY, 'suspicionPlayer': suspicionPlayer, 'card': suspicionCard}
-				await game_manager.send_personal_message(responseMessage, websocket)
+				suspicion_card = matches.pop()
+				response_message = {
+					'code': WS_SENT_CARD_NOTIFY,
+					'suspicion_player': suspicion_player,
+					'card': suspicion_card
+				}
+				await game_manager.send_personal_message(response_message, websocket)
 			responded = True
-		responseBroadcast = {'code': WS_SUSPICION_STATUS , 'responded': responded, 'suspicionPlayer': suspicionPlayer, 'response_player': response_player}
+		response_broadcast = {
+			'code': WS_SUSPICION_STATUS,
+			'responded': responded,
+			'suspicion_player': suspicion_player,
+			'response_player': response_player
+		}
 		#Broadcast suspicion status to all players
 		await game_manager.lobby_broadcast(responseBroadcast, lobby_id)
 	
@@ -149,9 +177,13 @@ async def handleTurn(websocket: WebSocket, player_id: int):
 			return
 		lobby = player.lobby
 		await game_manager.connect(websocket, player_id)
-		await game_manager.send_personal_message({"code" : WS_CURR_PLAYER + WS_CARD_LIST +  
-		WS_POS_LIST, "current_player" : get_current_turn(lobby.lobby_id), "cards" : get_card_list(player_id), 
-		"positions" : get_position_list(lobby.lobby_id)}, websocket)
+		message = {
+			"code": WS_CURR_PLAYER + WS_CARD_LIST +	WS_POS_LIST,
+			"current_player": get_current_turn(lobby.lobby_id),
+			"cards": get_card_list(player_id),
+			"positions": get_position_list(lobby.lobby_id)
+		}
+		await game_manager.send_personal_message(message,websocket)
 
 	try:
 		while(True):
