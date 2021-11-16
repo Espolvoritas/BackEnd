@@ -112,13 +112,13 @@ async def check_suspicion(player_id: int = Body(...), victim_id: int = Body(...)
 		'monster': monster_id,
 		'room': room_id
 	}
-	websocket = game_manager.get_websocket(player_id,lobby.lobby_id)
-	await game_manager.almost_lobby_broadcast(suspicion_broadcast, websocket,lobby.lobby_id)
+	sus_websocket = game_manager.get_websocket(player_id,lobby.lobby_id)
+	await game_manager.almost_lobby_broadcast(suspicion_broadcast, [sus_websocket],lobby.lobby_id)
 	await game_manager.update_turn(lobby.lobby_id)
-	suspicion_card, response_player = await check_player_cards(players, player.nickname, suspicion, lobby.lobby_id)
+	suspicion_card, response_player = await check_player_cards(players, player.nickname, sus_websocket, suspicion, lobby.lobby_id)
 	return {'response_player': response_player, 'suspicion_card': suspicion_card}
 	
-async def check_player_cards(players: list, suspicion_player: str, suspicion: list, lobby_id: int):
+async def check_player_cards(players: list, suspicion_player: str, sus_websocket: WebSocket, suspicion: list, lobby_id: int):
 	responded = False
 	response_player = ""
 	suspicion_card = 0
@@ -129,12 +129,12 @@ async def check_player_cards(players: list, suspicion_player: str, suspicion: li
 			if card in next_player[2]:
 				matches.append(card)
 		response_player = next_player[1]
+		res_websocket = game_manager.get_websocket(next_player[0], lobby_id)
 		if matches:
-			websocket = game_manager.get_websocket(next_player[0], lobby_id)
 			if len(matches) > 1:
 				response_message = {'code': WS_PICK_CARD, 'matching_cards': matches}
 				#Send next player the option to pick a card
-				await game_manager.send_personal_message(response_message, websocket)
+				await game_manager.send_personal_message(response_message, res_websocket)
 				while game_manager.picked_card_id is None:
 					#Await for next player to pick a card to show (maybe implement timer)
 					await sleep(1)
@@ -147,7 +147,7 @@ async def check_player_cards(players: list, suspicion_player: str, suspicion: li
 					'suspicion_player': suspicion_player,
 					'card': suspicion_card
 				}
-				await game_manager.send_personal_message(response_message, websocket)
+				await game_manager.send_personal_message(response_message, res_websocket)
 			responded = True
 		response_broadcast = {
 			'code': WS_SUSPICION_STATUS,
