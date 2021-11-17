@@ -46,10 +46,10 @@ def test_get_moves():
         flush()
 
     response = client.post("/gameBoard/moves",
-		headers={"accept": "application/json",
-				"Content-Type" : "application/json"},
-				json={"player_id": 1, "x": 4, "y": 7, "cost": 4}
-				)
+        headers={"accept": "application/json",
+                "Content-Type" : "application/json"},
+                json={"player_id": 1, "x": 4, "y": 7, "cost": 4}
+                )
                 
     responseJson = response.json()
     print(responseJson)

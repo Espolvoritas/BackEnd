@@ -6,7 +6,7 @@ from pony.orm import select, flush, commit
 db.clear_tables()
 
 def test_card_existence():
-    card_names = '''
+    card_names = """
     DRACULA
     FRANKENSTEIN
     WEREWOLF
@@ -27,7 +27,7 @@ def test_card_existence():
     PANTHEON
     HALL
     GARAGE
-    '''
+    """
 
     allCardNames = set([n.strip() for n in card_names.split("\n") if len(n.strip()) > 0])
     foundCards = set()

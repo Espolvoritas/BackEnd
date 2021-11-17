@@ -4,7 +4,7 @@ from pony.orm import flush
 import Misterio.database as db
 
 def test_playing_order():
-    '''Check if players are sorted at random correctly.'''
+    """Check if players are sorted at random correctly."""
 
     db.clear_tables()
         

@@ -27,7 +27,7 @@ def test_player_deletion():
     
 
 def test_game_creation():
-    '''Check if a game entity instance can be created succesfully.'''
+    """Check if a game entity instance can be created succesfully."""
     game_name = "Espolvoritas 4ever"
     with db_session:
         host = db.Player(nickname="eladmin")
@@ -40,8 +40,8 @@ def test_game_creation():
 
     
 def test_adding_players():
-    '''Check if players can be added to a game safely 
-    with the expected results.'''
+    """Check if players can be added to a game safely 
+    with the expected results."""
 
     with db_session:
         print("Creating some players...")

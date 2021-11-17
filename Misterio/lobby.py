@@ -45,23 +45,23 @@ async def get_available_games():
 
 @lobby.post("/startGame", status_code=status.HTTP_200_OK)
 async def start_game(player_id: int = Body(...)):
-	with db_session:
-		host = db.Player.get(player_id=player_id)
-		lobby = host.lobby
-		if lobby is None:
-			raise HTTPException(status_code=400, detail="Lobby does not exists")	
-		if lobby.host != host:
-			raise HTTPException(status_code=403, detail="Only host can start game")
-		if lobby.player_count < 2:
-			raise HTTPException(status_code=405, detail="Not enough players")
-		else:
-			lobby.game = db.Game(lobby=lobby)
-			lobby.is_started = True
-			lobby.game.sort_players()
-			lobby.game.shuffle_deck()
-			lobby.game.set_starting_positions()
-			await manager.lobby_broadcast("STATUS_GAME_STARTED", lobby.lobby_id)
-	return {}
+    with db_session:
+        host = db.Player.get(player_id=player_id)
+        lobby = host.lobby
+        if lobby is None:
+            raise HTTPException(status_code=400, detail="Lobby does not exists")    
+        if lobby.host != host:
+            raise HTTPException(status_code=403, detail="Only host can start game")
+        if lobby.player_count < 2:
+            raise HTTPException(status_code=405, detail="Not enough players")
+        else:
+            lobby.game = db.Game(lobby=lobby)
+            lobby.is_started = True
+            lobby.game.sort_players()
+            lobby.game.shuffle_deck()
+            lobby.game.set_starting_positions()
+            await manager.lobby_broadcast("STATUS_GAME_STARTED", lobby.lobby_id)
+    return {}
 
 
 @lobby.post("/joinCheck", status_code=status.HTTP_200_OK)
@@ -88,41 +88,41 @@ async def join_lobby(lobby_id: int = Body(...), player_nickname: str = Body(...)
 
 @lobby.put("/pickColor")
 async def pick_color(player_id: int = Body(...), color: int = Body(...)):
-	with db_session:
-		player = db.Player.get(player_id=player_id)
-		lobby = db.Lobby.get(lobby_id=player.lobby.lobby_id)
-		chosen_color = db.Color.get(color_id=color)
-		colors = lobby.get_available_colors()
-		if chosen_color not in colors:
-			raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Color doesn't exists or is already in use")
-		else:
-			player.set_color(chosen_color)
-			flush()
-			await manager.lobby_broadcast(await manager.get_players(lobby.lobby_id), lobby.lobby_id)
+    with db_session:
+        player = db.Player.get(player_id=player_id)
+        lobby = db.Lobby.get(lobby_id=player.lobby.lobby_id)
+        chosen_color = db.Color.get(color_id=color)
+        colors = lobby.get_available_colors()
+        if chosen_color not in colors:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Color doesn't exists or is already in use")
+        else:
+            player.set_color(chosen_color)
+            flush()
+            await manager.lobby_broadcast(await manager.get_players(lobby.lobby_id), lobby.lobby_id)
 
 
 @lobby.websocket("/lobby/{player_id}")
 async def handle_lobby(websocket: WebSocket, player_id: int):
-	with db_session:
-			player = db.Player.get(player_id=player_id)
-			if player is None or player.lobby is None or manager.exists(player_id):
-				await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
-				return
-			lobby = player.lobby
-			isHost = player.host_of == lobby
-	try:
-		await manager.connect(websocket, player_id)
-		await manager.lobby_broadcast(await manager.get_players(lobby.lobby_id), lobby.lobby_id)
-		while True:
-			try:
-				await asyncio.wait_for(await websocket.receive_text(), 0.0001)
-			except asyncio.TimeoutError:
-				pass
-	except WebSocketDisconnect:
-		if isHost:
-			await manager.disconnect_everyone(websocket, lobby.lobby_id)
-			await manager.host_disconnect(websocket, lobby.lobby_id)
-		else:
-			manager.disconnect(websocket, lobby.lobby_id)
-			await asyncio.sleep(0.1)
-			await manager.lobby_broadcast(await manager.get_players(lobby.lobby_id), lobby.lobby_id)
+    with db_session:
+            player = db.Player.get(player_id=player_id)
+            if player is None or player.lobby is None or manager.exists(player_id):
+                await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+                return
+            lobby = player.lobby
+            isHost = player.host_of == lobby
+    try:
+        await manager.connect(websocket, player_id)
+        await manager.lobby_broadcast(await manager.get_players(lobby.lobby_id), lobby.lobby_id)
+        while True:
+            try:
+                await asyncio.wait_for(await websocket.receive_text(), 0.0001)
+            except asyncio.TimeoutError:
+                pass
+    except WebSocketDisconnect:
+        if isHost:
+            await manager.disconnect_everyone(websocket, lobby.lobby_id)
+            await manager.host_disconnect(websocket, lobby.lobby_id)
+        else:
+            manager.disconnect(websocket, lobby.lobby_id)
+            await asyncio.sleep(0.1)
+            await manager.lobby_broadcast(await manager.get_players(lobby.lobby_id), lobby.lobby_id)

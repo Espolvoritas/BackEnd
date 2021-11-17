@@ -25,27 +25,27 @@ def make_board():
              (16, 16, "LAB"), (16, 10, "PANTHEON"),
              (16, 2, "LIBRARY"), (10, 3, "ROOM")]
 
-    entrances = [(0, 6, "entrance"), (0, 13, "entrance"), 
-                 (6, 0, "entrance"), (13, 0, "entrance"), 
-                 (6, 19, "entrance"), (13, 19, "entrance"),
-                 (19, 13, "entrance"), (19, 6, "entrance")]
+    entrances = [(0, 6, "START_CELL"), (0, 13, "START_CELL"), 
+                 (6, 0, "START_CELL"), (13, 0, "START_CELL"), 
+                 (6, 19, "START_CELL"), (13, 19, "START_CELL"),
+                 (19, 13, "START_CELL"), (19, 6, "START_CELL")]
     
-    room_entrances = [(4, 6, "entrance- LOBBY"), (6, 10, "entrance- LOBBY"),
-                     (3, 13, "entrance- LOBBY"), (6, 2, "entrance- GARAGE"),
-                     (13, 4, "entrance- LIBRARY"), (13, 10, "entrance- PANTHEON"),
-                     (16, 13, "entrance- PANTHEON"), (15, 6, "entrance- PANTHEON"),
-                     (13, 16, "entrance- LAB"), (10, 6, "entrance- ROOM"),
-                     (10, 13, "entrance- HALL"), (6, 15, "entrance- CELLAR")]
+    room_entrances = [(4, 6, "ENTRANCE-LOBBY"), (6, 10, "ENTRANCE-LOBBY"),
+                     (3, 13, "ENTRANCE-LOBBY"), (6, 2, "ENTRANCE-GARAGE"),
+                     (13, 4, "ENTRANCE-LIBRARY"), (13, 10, "ENTRANCE-PANTHEON"),
+                     (16, 13, "ENTRANCE-PANTHEON"), (15, 6, "ENTRANCE-PANTHEON"),
+                     (13, 16, "ENTRANCE-LAB"), (10, 6, "ENTRANCE-ROOM"),
+                     (10, 13, "ENTRANCE-HALL"), (6, 15, "ENTRANCE-CELLAR")]
 
-    portals = [(6, 4, "vampire"), (13, 3, "scorpion"),
-               (6, 14, "vampire"), (13, 14, "scorpion"),
-               (14, 6, "cobra"), (4, 13, "tarantula"),
-               (3, 6, "cobra"), (15, 13, "tarantula")]
+    portals = [(6, 4, "VAMPIRE"), (13, 3, "SCORPION"),
+               (6, 14, "VAMPIRE"), (13, 14, "SCORPION"),
+               (14, 6, "COBRA"), (4, 13, "TARANTULA"),
+               (3, 6, "COBRA"), (15, 13, "TARANTULA")]
 
-    traps = [(6, 6, "Trap"), (6, 13, "Trap"),
-             (13, 6, "Trap"), (13, 13, "Trap")]
+    traps = [(6, 6, "TRAP"), (6, 13, "TRAP"),
+             (13, 6, "TRAP"), (13, 13, "TRAP")]
 
-    plain = []
+    PLAIN = []
     
     all_cells = rooms + entrances + room_entrances + portals + traps
 
@@ -60,9 +60,9 @@ def make_board():
                 plain_cell_coords.add((i, j))
 
     for x, y in plain_cell_coords:
-        plain.append((x, y, "plain"))
+        PLAIN.append((x, y, "PLAIN"))
 
-    all_cells = all_cells + plain
+    all_cells = all_cells + PLAIN
 
     for (c1, c2) in combinations(all_cells, 2):
         x, y, t = c1
