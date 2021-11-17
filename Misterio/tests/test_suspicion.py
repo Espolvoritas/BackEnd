@@ -183,7 +183,6 @@ def test_makeSuspicion_2players():
         print(victim.card_name)
         monster = monster.card_id
         victim = victim.card_id
-
     with client.websocket_connect("/gameBoard/" + str(player1.player_id)) as websocket1:
         currplayer = websocket1.receive_json()
         print(currplayer)

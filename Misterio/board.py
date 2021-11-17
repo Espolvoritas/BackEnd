@@ -62,7 +62,7 @@ def make_board():
     for x, y in plain_cell_coords:
         plain.append((x, y, "PLAIN"))
 
-    all_cells = all_cells + plain
+    all_cells = all_cells + PLAIN
 
     for (c1, c2) in combinations(all_cells, 2):
         x, y, t = c1
