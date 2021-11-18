@@ -45,7 +45,7 @@ def make_board():
     traps = [(6, 6, "TRAP"), (6, 13, "TRAP"),
              (13, 6, "TRAP"), (13, 13, "TRAP")]
 
-    PLAIN = []
+    plain = []
     
     all_cells = rooms + entrances + room_entrances + portals + traps
 
@@ -60,9 +60,9 @@ def make_board():
                 plain_cell_coords.add((i, j))
 
     for x, y in plain_cell_coords:
-        PLAIN.append((x, y, "PLAIN"))
+        plain.append((x, y, "PLAIN"))
 
-    all_cells = all_cells + PLAIN
+    all_cells = all_cells + plain
 
     for (c1, c2) in combinations(all_cells, 2):
         x, y, t = c1
