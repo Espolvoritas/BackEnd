@@ -13,6 +13,7 @@ def get_room_cell_id(room_name: str):
         if room.name == room_name:
             return room.value
 
+@db_session
 def get_room_card_id(room_name: str):
     card_id = db.Card.get(card_name=room_name).card_id
     return card_id
