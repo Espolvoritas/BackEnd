@@ -6,6 +6,7 @@ import asyncio
 
 import Misterio.database as db
 import Misterio.manager as mng
+from Misterio.functions import get_lobby_by_id, get_player_by_id
 
 lobby = APIRouter(prefix="/lobby")
 logger = logging.getLogger("lobby")
@@ -46,7 +47,9 @@ async def get_available_games():
 @lobby.post("/startGame", status_code=status.HTTP_200_OK)
 async def start_game(player_id: int = Body(...)):
     with db_session:
-        host = db.Player.get(player_id=player_id)
+        host = get_player_by_id(player_id)
+        if host is None:
+            raise HTTPException(status_code=400, detail=f"Player {player_id} does not exist")
         lobby = host.lobby
         if lobby is None:
             raise HTTPException(status_code=400, detail="Lobby does not exists")    
@@ -68,7 +71,7 @@ async def start_game(player_id: int = Body(...)):
 async def join_lobby(lobby_id: int = Body(...), player_nickname: str = Body(...)):
 
     with db_session:
-        chosen_lobby = db.Lobby.get(lobby_id=lobby_id)
+        chosen_lobby = get_lobby_by_id(lobby_id)
         if chosen_lobby is None:
             raise HTTPException(status_code=404, detail="Bad Request")
         existing_nicknames = set([player.nickname for player in select(p for p in chosen_lobby.players)])
@@ -89,27 +92,26 @@ async def join_lobby(lobby_id: int = Body(...), player_nickname: str = Body(...)
 @lobby.put("/pickColor")
 async def pick_color(player_id: int = Body(...), color: int = Body(...)):
     with db_session:
-        player = db.Player.get(player_id=player_id)
-        lobby = db.Lobby.get(lobby_id=player.lobby.lobby_id)
+        player = get_player_by_id(player_id)
         chosen_color = db.Color.get(color_id=color)
-        colors = lobby.get_available_colors()
+        colors = player.lobby.get_available_colors()
         if chosen_color not in colors:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Color doesn't exists or is already in use")
         else:
             player.set_color(chosen_color)
             flush()
-            await manager.lobby_broadcast(await manager.get_players(lobby.lobby_id), lobby.lobby_id)
+            await manager.lobby_broadcast(await manager.get_players(player.lobby.lobby_id), player.lobby.lobby_id)
 
 
 @lobby.websocket("/lobby/{player_id}")
 async def handle_lobby(websocket: WebSocket, player_id: int):
     with db_session:
-            player = db.Player.get(player_id=player_id)
-            if player is None or player.lobby is None or manager.exists(player_id):
-                await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
-                return
-            lobby = player.lobby
-            isHost = player.host_of == lobby
+        player = get_player_by_id(player_id)
+        if player is None or player.lobby is None or manager.exists(player_id):
+            await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+            return
+        lobby = player.lobby
+        isHost = player.host_of == lobby
     try:
         await manager.connect(websocket, player_id)
         await manager.lobby_broadcast(await manager.get_players(lobby.lobby_id), lobby.lobby_id)
