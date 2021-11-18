@@ -24,10 +24,10 @@ class Card(db.Entity):
     owners = Set("Player", reverse="cards")
 
     def is_monster(self):
-        return self.card_type == "Monster"
+        return self.card_type == "MONSTER"
     
     def is_victim(self):
-        return self.card_type == "Victim"
+        return self.card_type == "VICTIM"
 
     def is_room(self):
         return self.card_type == "ROOM"
@@ -72,8 +72,8 @@ class Game(db.Entity):
 
     def fill_envelope(self):
         #Get the available cards
-        victim_cards = select(c for c in Card if c.card_type == "Victim")
-        monster_cards = select(c for c in Card if c.card_type == "Monster")
+        victim_cards = select(c for c in Card if c.card_type == "VICTIM")
+        monster_cards = select(c for c in Card if c.card_type == "MONSTER")
         room_cards = select(c for c in Card if c.card_type == "ROOM")
         # Fill the "Misterio" envelope
         self.monster=choice(list(monster_cards))
@@ -208,9 +208,9 @@ db.generate_mapping(create_tables=True)  # Generate database
 def fill_cards():
     with db_session:
         for card in Monster:
-            Card(card_name=card.name, card_type="Monster")
+            Card(card_name=card.name, card_type="MONSTER")
         for card in Victim:
-            Card(card_name=card.name, card_type="Victim")
+            Card(card_name=card.name, card_type="VICTIM")
         for card in Room:
             Card(card_name=card.name, card_type="ROOM")
 
