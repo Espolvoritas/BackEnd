@@ -76,8 +76,4 @@ def test_wrong_accusation():
                 data = websocket1.receive_json()
                 websocket1.close()
             except KeyboardInterrupt:
-<<<<<<< HEAD
                 websocket1.close()
-=======
-                websocket1.close()
->>>>>>> 0203b2d... Consistence in coding-style
