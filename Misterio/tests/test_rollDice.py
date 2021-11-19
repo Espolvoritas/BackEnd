@@ -44,33 +44,6 @@ def test_send_one_roll():
         current_player_nickName = current_player.nickname
         next_player = current_player.next_player
 
-<<<<<<< HEAD
-	print(current_player)
-	with client.websocket_connect("/gameBoard/" + str(current_player.player_id)) as websocket1:
-		data = websocket1.receive_json()
-		print(data)
-		with client.websocket_connect("/gameBoard/" + str(next_player.player_id)) as websocket2:
-			#data = websocket1.receive_json()
-			#print(data)
-			data = websocket2.receive_json()
-			print(data)
-			try:
-				assert current_player_nickName == data["current_player"]
-				response = roll_dice_post(current_player.player_id, roll, client)
-				assert (response.status_code == 200)
-				print(response)
-				#assert next_player == data["current_player"]
-				websocket2.close()
-				data = websocket1.receive_json()
-				print(data)
-				websocket1.close()
-			except KeyboardInterrupt:
-				websocket1.close()
-	with db_session:
-		player = db.Player.get(player_id=current_player.player_id)
-		curr_roll = player.current_dice_roll
-	assert curr_roll == roll
-=======
     print(current_player)
     with client.websocket_connect("/gameBoard/" + str(current_player.player_id)) as websocket1:
         data = websocket1.receive_json()
@@ -97,7 +70,6 @@ def test_send_one_roll():
         player = db.Player.get(player_id=current_player.player_id)
         curr_roll = player.current_dice_roll
     assert curr_roll == roll
->>>>>>> 7f0de74... Consistence in coding-style
 
 def test_send_one_roll_not_in_turn():
     db.clear_tables()
