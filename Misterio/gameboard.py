@@ -160,6 +160,38 @@ async def check_player_cards(players: list, suspicion_player: str, sus_websocket
     
     return suspicion_card, response_player
 
+@gameBoard.post("/salemsWitch")
+async def use_salems_witch(player_id: int = Body(...), card_type: str = Body(...)):
+    envelope_card = None
+    with db_session:
+        player = get_player_by_id(player_id)
+        if player is None:
+            raise HTTPException(status_code=400, detail="Player does not exist")
+        lobby = player.lobby
+        if lobby is None:
+            raise HTTPException(status_code=403, detail="Player is not in game.")
+        if not player_in_turn(player_id):
+            raise HTTPException(status_code=403, detail="Player can't use Salem's witch outside his/her turn.")
+        salem_card = get_card_by_id(21)
+        player_cards = get_card_list(player_id)
+        if not salem_card in player_cards:
+            raise HTTPException(status_code=403, detail="Player doesn't have Salem's witch card or has already used it.")
+        else:
+            if card_type == "MONSTER":
+                envelope_card = lobby.game.monster
+            elif card_type == "VICTIM":
+                envelope_card = lobby.game.victim
+            elif card_type == "ROOM":
+                envelope_card = lobby.game.room
+    message = {
+        "code": WS_CURR_PLAYER + WS_SALEM,
+        "current_player": get_current_turn(lobby.lobby_id),
+        "card_type_revealed": card_type,
+    }
+    websocket = game_manager.get_websocket(player_id, lobby.lobby_id)
+    await game_manager.almost_lobby_broadcast(message, [websocket], lobby.lobby_id)
+    return {"envelope_card": envelope_card}
+
 
 @gameBoard.websocket("/gameBoard/{player_id}")
 async def handle_turn(websocket: WebSocket, player_id: int):
