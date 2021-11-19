@@ -74,3 +74,40 @@ def accuse_post(player_id: int, room: int, monster: int, victim: int,client: Tes
                 "Content-Type" : "application/json"},
                 json={"room": room, "monster": monster, "victim": victim, "player_id": player_id}
                 )
+
+def connect_and_start_game_2_players(expected_players: list, client: TestClient):
+    
+    with client.websocket_connect("/lobby/1") as websocket1:
+        data1 = websocket1.receive_json()
+        for player, expected in zip(data1["players"], expected_players):
+            assert (player["nickname"] == expected)
+        print("Conection broadcast player 1", data1)
+
+        with client.websocket_connect("/lobby/2") as websocket2:
+            try:
+                data1 = websocket1.receive_json()
+                for player, expected in zip(data1["players"], expected_players):
+                    assert (player["nickname"] == expected)
+                print("Connection broadcast player 2 to player 1", data1)
+                data2 = websocket2.receive_json()
+                for player, expected in zip(data2["players"], expected_players):
+                    assert (player["nickname"] == expected)
+                print("Connection broadcast player 2 to player 2", data2)
+
+                response = start_game_post(1, client)
+                assert (response.status_code == 200)
+                data1 = websocket1.receive_json()
+                data2 = websocket2.receive_json()
+                print("Game status", data1)
+                assert (data1 == "STATUS_GAME_STARTED")
+                print("Game status 2", data2)
+                assert (data2 == "STATUS_GAME_STARTED")
+                
+                websocket2.close()
+                data = websocket1.receive_json()
+                for player, expected in zip(data["players"], expected_players):
+                    assert (player["nickname"] == expected)
+                websocket1.close()
+            except KeyboardInterrupt:
+                websocket2.close()
+                websocket1.close()

@@ -1,19 +1,10 @@
 from fastapi.testclient import TestClient
 from pony.orm import db_session, flush
-import string    
-import random # define the random module  
 
 from Misterio.server import app
 import Misterio.database as db
-
+from Misterio.testing_utils import get_random_string
 client = TestClient(app)
-
-#aux function for getting random strings
-def get_random_string(length):
-    # choose from all lowercase letter
-    letters = string.ascii_lowercase
-    result_str = "".join(random.choice(letters) for i in range(length))
-    return result_str
 
 def test_no_games():
     db.clear_tables()
@@ -24,16 +15,16 @@ def test_get_single_game():
     db.clear_tables()
     #Create a game
     with db_session:
-        hostPlayer = db.Player(nickname="IAmHost")
+        host_player = db.Player(nickname="IAmHost")
         flush()
-        newGame = db.Lobby(name="game1", host=hostPlayer, is_started=False)
+        new_game = db.Lobby(name="game1", host=host_player, is_started=False)
         flush()
-        newGame.add_player(hostPlayer)
+        new_game.add_player(host_player)
         gamejson = {}
-        gamejson["name"] = newGame.name
-        gamejson["id"] = newGame.lobby_id
-        gamejson["players"] = int(newGame.player_count)
-        gamejson["host"] = newGame.host.nickname
+        gamejson["name"] = new_game.name
+        gamejson["id"] = new_game.lobby_id
+        gamejson["players"] = int(new_game.player_count)
+        gamejson["host"] = new_game.host.nickname
         gamejson["password"] = False
     response = client.get("/lobby/availableGames")
 
@@ -48,8 +39,8 @@ def test_various_games():
         hosts = []
         for i in range(6):
             hostname=f"IAmHost{i}"
-            hostPlayer = db.Player(nickname=hostname)
-            hosts.append(hostPlayer)
+            host_player = db.Player(nickname=hostname)
+            hosts.append(host_player)
         flush()
         games = []
         
@@ -100,8 +91,8 @@ def test_full_games():
         hosts = []
         for i in range(6):
             hostname=f"IAmHost{i}"
-            hostPlayer = db.Player(nickname=hostname)
-            hosts.append(hostPlayer)
+            host_player = db.Player(nickname=hostname)
+            hosts.append(host_player)
         flush()
         games = []
         
@@ -140,8 +131,8 @@ def test_full_and_available():
         hosts = []
         for i in range(6):
             hostname=f"IAmHost{i}"
-            hostPlayer = db.Player(nickname=hostname)
-            hosts.append(hostPlayer)
+            host_player = db.Player(nickname=hostname)
+            hosts.append(host_player)
         flush()
         games = []
         

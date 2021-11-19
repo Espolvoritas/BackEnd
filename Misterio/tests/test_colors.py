@@ -1,29 +1,25 @@
 from fastapi.testclient import TestClient
-from pony.orm import db_session, flush, select
-from typing import Match
-import string
-import pytest
+from pony.orm import db_session
 import random # define the random module  
-from fastapi import WebSocketDisconnect
 from Misterio.testing_utils import *
 from Misterio.server import app
 import Misterio.database as db
 
 client = TestClient(app)
 
-def test_joinColors():
+def test_join_colors():
     db.clear_tables()
     host = get_random_string(6)
     lobby_id = create_game_post(host, client).json()["lobby_id"]
-    expectedPlayers = create_players(1,lobby_id)
-    expectedPlayers.insert(0,host)
+    expected_players = create_players(1,lobby_id)
+    expected_players.insert(0,host)
 
     with client.websocket_connect("/lobby/1") as websocket1, \
         client.websocket_connect("/lobby/2") as websocket2:
         try:
             with db_session:
-                player1 = db.Player.get(nickname=expectedPlayers[0])
-                player2 = db.Player.get(nickname=expectedPlayers[1])
+                player1 = db.Player.get(nickname=expected_players[0])
+                player2 = db.Player.get(nickname=expected_players[1])
 
                 color1, color2 = player1.color, player2.color
 
@@ -31,12 +27,12 @@ def test_joinColors():
             assert color2 is not None
             
             data = websocket1.receive_json()
-            for player, expected in zip(data["players"], expectedPlayers):
+            for player, expected in zip(data["players"], expected_players):
                 assert player["nickname"] == expected
                 assert player["Color"] not in data["colors"]
 
             data2 = websocket2.receive_json()
-            for player, expected in zip(data2["players"], expectedPlayers):
+            for player, expected in zip(data2["players"], expected_players):
                 assert player["nickname"] == expected
                 assert player["Color"] not in data2["colors"]
 
@@ -45,7 +41,7 @@ def test_joinColors():
             assert color2.color_id not in data["colors"]
 
             data = websocket1.receive_json()
-            for player, expected in zip(data["players"], expectedPlayers):
+            for player, expected in zip(data["players"], expected_players):
                 assert player["nickname"] == expected
                 assert player["Color"] not in data["colors"]
             websocket1.close()
@@ -60,15 +56,15 @@ def test_change_color():
     lobby_id = create_game_post(host, client).json()["lobby_id"]
     
     with client.websocket_connect("/lobby/1") as websocket1:
-        expectedPlayers = create_players(1,lobby_id)
-        expectedPlayers.insert(0,host)
+        expected_players = create_players(1,lobby_id)
+        expected_players.insert(0,host)
         with db_session:
-                player1 = db.Player.get(nickname=expectedPlayers[0])
-                player2 = db.Player.get(nickname=expectedPlayers[1])
-                player1id = player1.player_id
-                player2id = player2.player_id
-                color1, color2 = player1.color.color_id, player2.color.color_id
-                expected_colors = [color1, color2]
+            player1 = db.Player.get(nickname=expected_players[0])
+            player2 = db.Player.get(nickname=expected_players[1])
+            player1id = player1.player_id
+            player2id = player2.player_id
+            color1, color2 = player1.color.color_id, player2.color.color_id
+            expected_colors = [color1, color2]
         data = websocket1.receive_json()
         assert color1 not in data["colors"]
         assert color2 in data["colors"]
@@ -78,7 +74,7 @@ def test_change_color():
                 assert color1 not in data1["colors"]
                 assert color2 not in data1["colors"]
 
-                for player, expected, colors in zip(data["players"], expectedPlayers, expected_colors):
+                for player, expected, colors in zip(data["players"], expected_players, expected_colors):
                     assert player["nickname"] == expected
                     assert player["Color"] == colors
 
@@ -87,7 +83,7 @@ def test_change_color():
                 assert color2 not in data2["colors"]
                 assert data1 == data2
 
-                for player, expected, colors in zip(data2["players"], expectedPlayers, expected_colors):
+                for player, expected, colors in zip(data2["players"], expected_players, expected_colors):
                     assert player["nickname"] == expected
                     assert player["Color"] == colors
 
@@ -130,11 +126,11 @@ def test_taken_color():
     lobby_id = create_game_post(host, client).json()["lobby_id"]
     
     with client.websocket_connect("/lobby/1") as websocket1:
-        expectedPlayers = create_players(1,lobby_id)
-        expectedPlayers.insert(0,host)
+        expected_players = create_players(1,lobby_id)
+        expected_players.insert(0,host)
         with db_session:
-                player1 = db.Player.get(nickname=expectedPlayers[0])
-                player2 = db.Player.get(nickname=expectedPlayers[1])
+                player1 = db.Player.get(nickname=expected_players[0])
+                player2 = db.Player.get(nickname=expected_players[1])
                 player1id = player1.player_id
                 player2id = player2.player_id
                 color1, color2 = player1.color.color_id, player2.color.color_id
@@ -149,7 +145,7 @@ def test_taken_color():
                 assert (color1 not in data1["colors"])
                 assert (color2 not in data1["colors"])
 
-                for player, expected, colors in zip(data["players"], expectedPlayers, expected_colors):
+                for player, expected, colors in zip(data["players"], expected_players, expected_colors):
                     assert (player["nickname"] == expected)
                     assert (player["Color"] == colors)
 
@@ -158,7 +154,7 @@ def test_taken_color():
                 assert (color2 not in data2["colors"])
                 assert (data1 == data2)
 
-                for player, expected, colors in zip(data2["players"], expectedPlayers, expected_colors):
+                for player, expected, colors in zip(data2["players"], expected_players, expected_colors):
                     assert (player["nickname"] == expected)
                     assert (player["Color"] == colors)
 

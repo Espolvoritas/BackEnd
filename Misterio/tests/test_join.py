@@ -1,7 +1,5 @@
 from fastapi.testclient import TestClient
 from pony.orm import db_session, flush
-import pytest
-from fastapi import WebSocketDisconnect
 from Misterio.server import app
 import Misterio.database as db
 

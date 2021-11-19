@@ -3,23 +3,23 @@ from pony.orm import db_session, select, flush, commit
 import Misterio.database as db
 
 def test_player_creation():
-    name = "testPlayer"
-    print("Creating player testPlayer...")
+    name = "test_player"
+    print("Creating player test_player...")
     with db_session:
-        testPlayer = db.Player(nickname=name)
+        test_player = db.Player(nickname=name)
         commit()
         query = select(p for p in db.Player if p.nickname == name)
         result = query.first()
-    assert (result.nickname == testPlayer.nickname)
+    assert (result.nickname == test_player.nickname)
     db.clear_tables()
     
 def test_player_deletion():
-    name = "testPlayer"
-    print("Creating player testPlayer...")
+    name = "test_player"
+    print("Creating player test_player...")
     with db_session:
-        testPlayer = db.Player(nickname=name)
+        test_player = db.Player(nickname=name)
         commit()
-        db.Player[testPlayer.player_id].delete()
+        db.Player[test_player.player_id].delete()
         flush()
         result = list(select(p for p in db.Player))
     assert not result 

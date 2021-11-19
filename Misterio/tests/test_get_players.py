@@ -1,6 +1,5 @@
 from fastapi.testclient import TestClient
 from pony.orm import db_session
-from typing import Match
 import pytest
 from fastapi import WebSocketDisconnect
 from Misterio.testing_utils import *
@@ -97,7 +96,6 @@ def test_leave_host():
                     assert player["nickname"] == expected
                 websocket1.close()
                 data = websocket2.receive_json()
-                websocket2.close()
             except KeyboardInterrupt:
                 websocket2.close()
                 websocket1.close()
@@ -106,21 +104,21 @@ def test_get_two_players():
     db.clear_tables()
     host = get_random_string(6)
     lobby_id = create_game_post(host, client).json()["lobby_id"]
-    expectedPlayers = create_players(1, lobby_id)
-    expectedPlayers.insert(0,host)
+    expected_players = create_players(1, lobby_id)
+    expected_players.insert(0,host)
     with client.websocket_connect("/lobby/1") as websocket1, \
         client.websocket_connect("/lobby/2") as websocket2:
         try:
             data = websocket1.receive_json()
-            for player, expected in zip(data["players"], expectedPlayers):
+            for player, expected in zip(data["players"], expected_players):
                 assert player["nickname"] == expected
             data = websocket2.receive_json()
-            for player, expected in zip(data["players"], expectedPlayers):
+            for player, expected in zip(data["players"], expected_players):
                 print(player)
                 assert player["nickname"] == expected
             websocket2.close()
             data = websocket1.receive_json()
-            for player, expected in zip(data["players"], expectedPlayers):
+            for player, expected in zip(data["players"], expected_players):
                 assert player["nickname"] == expected
             websocket1.close()
         except KeyboardInterrupt:
