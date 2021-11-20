@@ -36,7 +36,6 @@ async def get_moves(player_id: int = Body(...), x: int = Body(...), y: int = Bod
             player.set_roll(remaining)
             moves=get_reachable(player_id)
         if room == 0 and remaining == 0 and "ENTRANCE-" not in new_position.cell_type:
-            set_player_status(player, new_position)
             await game_manager.update_turn(player.lobby.lobby_id)
     position_broadcast = {
         "code": WS_POS_LIST,

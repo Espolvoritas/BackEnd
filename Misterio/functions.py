@@ -38,8 +38,8 @@ def get_position_list(lobby_id: int):
     return position_list
 
 @db_session
-def set_player_status(player, cell):
-	print(cell.cellType)
+def set_player_status(player):
+	cell = player.location
 	if cell.cellType == "trap":
 		if player.trapped == trapped_status.NOT_TRAPPED.value:
 			player.trapped = trapped_status.TRAPPED.value
@@ -73,7 +73,8 @@ def get_next_turn(lobby_id: int):
     lobby = get_lobby_by_id(lobby_id)
     current_player = lobby.game.current_player
     lobby.game.current_player = current_player.next_player
-    if lobby.game.current_player.alive:
+    set_player_status(current_player)
+    if lobby.currentPlayer.alive and (lobby.currentPlayer.trapped != trapped_status.TRAPPED.value):
         return lobby.game.current_player.nickname
     else:    
         get_next_turn(lobby_id)
