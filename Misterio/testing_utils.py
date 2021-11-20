@@ -82,6 +82,13 @@ def salem_post(player_id: int, client: TestClient):
                 json=f"{player_id}"
                 )
 
+def join_game_post(lobby_id: int, player_nickname: str, password: str, client: TestClient):
+    return client.post("/lobby/joinCheck",
+                headers={"accept": "application/json",
+                "Content-Type" : "application/json"},
+                json={"lobby_id": lobby_id, "player_nickname": player_nickname, "password": password}
+                )
+
 def connect_and_start_game_2_players(expected_players: list, client: TestClient):
     
     with client.websocket_connect("/lobby/1") as websocket1:
