@@ -189,7 +189,8 @@ class Cell(db.Entity):
         if moves > 0:
 
             reachable = reachable + [(n, moves-1) for n in self.getNeighbors()]
-            #reachable = reachable + [(fn, moves) for fn in self.getFreeNeighbors()]
+            if ("portal-" in player.location.cellType) and (player.in_portal):
+                reachable = reachable + [(fn, moves) for fn in self.getFreeNeighbors()]
 
             already = {e for e, c in reachable} | set([self])
             special = {e for e, c in reachable if e.is_special()}         
