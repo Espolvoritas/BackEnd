@@ -196,9 +196,10 @@ class Cell(db.Entity):
             new = []
             while current:
                 for c, d in current:
-                    if not c.is_trap():
-                        if d != 0:
-                            new = new + [(n, d-1) for n in c.get_neighbors() if n not in already]
+                    if d != 0:
+                        new = new + [(n, d-1) for n in c.getNeighbors() if n not in already]
+                        #new = new + [(fn, d) for fn in c.getFreeNeighbors() if fn not in already]
+
                 reachable = reachable + list(new)
                 already = already | {c for c, d in new}
                 current = list(new)
