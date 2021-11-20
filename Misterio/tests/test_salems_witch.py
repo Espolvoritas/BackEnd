@@ -21,32 +21,22 @@ def test_card_usage_2_players():
         salem_card = select(c for c in db.Card if c.card_type == "SALEM").first()
         player1 = select(p for p in db.Player if salem_card in p.cards).first()
         envelope = [lobby.game.monster.card_id, lobby.game.victim.card_id, lobby.game.room.card_id]
+        lobby.game.current_player = player1
         player2 = player1.next_player.player_id
         player1 = player1.player_id
-        curr_player_id = lobby.game.current_player.player_id
 
     with client.websocket_connect("/gameBoard/" + str(player1)) as websocket1:
         websocket1.receive_json()
         with client.websocket_connect("/gameBoard/" + str(player2)) as websocket2:
             websocket2.receive_json()#connection broadcast
             try:
-                if (curr_player_id == player1):
-                    response = salem_post(player1, "MONSTER", client)
-                    print(response.json())
-                    data = websocket2.receive_json()
-                    assert (data["code"] & 2048)
-                    assert (data["card_type_revealed"] == "MONSTER")
-                    assert (response.status_code == 200)
-                    assert (response.json()["envelope_card"] in envelope)
-
-                else:
-                    response = salem_post(player2, "VICTIM", client)
-                    print(response.json())
-                    data = websocket1.receive_json()
-                    assert (data["code"] & 2048)
-                    assert (data["card_type_revealed"] == "VICTIM")
-                    assert (response.status_code == 200)
-                    assert (response.json()["envelope_card"] in envelope)
+                response = salem_post(player1, "MONSTER", client)
+                print(response.json())
+                data = websocket2.receive_json()
+                assert (data["code"] & 2048)
+                assert (data["card_type_revealed"] == "MONSTER")
+                assert (response.status_code == 200)
+                assert (response.json()["envelope_card"] in envelope)
 
                 websocket2.close()
                 data1 = websocket1.receive_json()
