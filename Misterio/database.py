@@ -180,13 +180,16 @@ class Cell(db.Entity):
     def is_trap(self):
         return self.cell_type == "TRAP"
 
-    def get_reachable(self, moves):
+    def getReachable(self, moves, player):
 
-        if moves == 0:
-            return [(fn, 0) for fn in self.get_free_neighbors()]
+        reachable = []
+        if ("entrance-" in player.location.cellType) or (player.location.cellType=="room"):
+            reachable = [(fn, moves) for fn in self.getFreeNeighbors()]
         if moves > 0:
-            reachable = [(n, moves-1) for n in self.get_neighbors()]
-            reachable = reachable + [(fn, moves) for fn in self.get_free_neighbors()]
+
+            reachable = reachable + [(n, moves-1) for n in self.getNeighbors()]
+            #reachable = reachable + [(fn, moves) for fn in self.getFreeNeighbors()]
+
             already = {e for e, c in reachable} | set([self])
             special = {e for e, c in reachable if e.is_special()}         
             current = list(reachable)
@@ -200,7 +203,10 @@ class Cell(db.Entity):
                 already = already | {c for c, d in new}
                 current = list(new)
                 new = list()
-            return reachable
+
+            print(reachable)
+
+        return reachable
 
 db.bind("sqlite", "database.sqlite", create_db=True)  # Connect object `db` with database.
 db.generate_mapping(create_tables=True)  # Generate database
