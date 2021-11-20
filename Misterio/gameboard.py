@@ -2,7 +2,7 @@ from fastapi import APIRouter, status, WebSocket, WebSocketDisconnect, HTTPExcep
 from pony.orm import db_session, select
 from asyncio import sleep
 import logging
-
+from random import choice
 from Misterio.constants import *
 from Misterio.functions import *
 import Misterio.database as db
@@ -161,7 +161,7 @@ async def check_player_cards(players: list, suspicion_player: str, sus_websocket
     return suspicion_card, response_player
 
 @gameBoard.post("/salemsWitch")
-async def use_salems_witch(player_id: int = Body(...), card_type: str = Body(...)):
+async def use_salems_witch(player_id: int = Body(...)):
     envelope_card = None
     with db_session:
         player = get_player_by_id(player_id)
@@ -177,17 +177,12 @@ async def use_salems_witch(player_id: int = Body(...), card_type: str = Body(...
         if not salem_card.card_id in player_cards:
             raise HTTPException(status_code=403, detail="Player doesn't have Salem's witch card or has already used it.")
         else:
-            if card_type == "MONSTER":
-                envelope_card = lobby.game.monster.card_id
-            elif card_type == "VICTIM":
-                envelope_card = lobby.game.victim.card_id
-            elif card_type == "ROOM":
-                envelope_card = lobby.game.room.card_id
+            envelope = [lobby.game.monster.card_id, lobby.game.victim.card_id, lobby.game.room.card_id]
+            envelope_card = choice(envelope)
             player.cards.remove(salem_card)
     message = {
-        "code": WS_CURR_PLAYER + WS_SALEM,
+        "code": WS_SALEM,
         "current_player": get_current_turn(lobby.lobby_id),
-        "card_type_revealed": card_type,
     }
     websocket = game_manager.get_websocket(player_id, lobby.lobby_id)
     await game_manager.almost_lobby_broadcast(message, [websocket], lobby.lobby_id)

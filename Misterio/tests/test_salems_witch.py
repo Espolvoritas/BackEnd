@@ -30,11 +30,10 @@ def test_card_usage_2_players():
         with client.websocket_connect("/gameBoard/" + str(player2)) as websocket2:
             websocket2.receive_json()#connection broadcast
             try:
-                response = salem_post(player1, "MONSTER", client)
+                response = salem_post(player1, client)
                 print(response.json())
                 data = websocket2.receive_json()
                 assert (data["code"] & 2048)
-                assert (data["card_type_revealed"] == "MONSTER")
                 assert (response.status_code == 200)
                 assert (response.json()["envelope_card"] in envelope)
 
@@ -75,12 +74,12 @@ def test_no_card():
             websocket2.receive_json()#connection broadcast
             try:
                 if (curr_player_id == player1):
-                    response = salem_post(player1, "ROOM", client)
+                    response = salem_post(player1, client)
                     print(response.json())
                     assert (response.status_code == 403)
 
                 else:
-                    response = salem_post(player2, "ROOM", client)
+                    response = salem_post(player2, client)
                     print(response.json())
                     assert (response.status_code == 403)
                 websocket2.close()
@@ -114,12 +113,12 @@ def test_not_turn():
             websocket2.receive_json()#connection broadcast
             try:
                 if (curr_player_id == player1):
-                    response = salem_post(player2, "ROOM", client)
+                    response = salem_post(player2, client)
                     print(response.json())
                     assert (response.status_code == 403)
 
                 else:
-                    response = salem_post(player1, "ROOM", client)
+                    response = salem_post(player1, client)
                     print(response.json())
                     assert (response.status_code == 403)
                 websocket2.close()

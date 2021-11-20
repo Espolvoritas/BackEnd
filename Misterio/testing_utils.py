@@ -75,11 +75,11 @@ def accuse_post(player_id: int, room: int, monster: int, victim: int,client: Tes
                 json={"room": room, "monster": monster, "victim": victim, "player_id": player_id}
                 )
 
-def salem_post(player_id: int, card_type: str, client: TestClient):
+def salem_post(player_id: int, client: TestClient):
     return client.post("/gameBoard/salemsWitch",
                 headers={"accept": "application/json",
                 "Content-Type" : "application/json"},
-                json={"player_id": player_id, "card_type": card_type}
+                json=f"{player_id}"
                 )
 
 def connect_and_start_game_2_players(expected_players: list, client: TestClient):
