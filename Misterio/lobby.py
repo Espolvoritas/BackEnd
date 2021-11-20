@@ -78,13 +78,17 @@ async def join_lobby(lobby_id: int = Body(...), player_nickname: str = Body(...)
         nickname_is_taken = player_nickname in existing_nicknames
         if nickname_is_taken:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Nickname already in use")
+        if (lobby.password != ""):
+            lobby_password = base64.b64decode(lobby.password).decode("ascii")
+            if password != lobby_password:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid password")
         if chosen_lobby is not None and not nickname_is_taken:
             new_player = db.Player(nickname=str(player_nickname))
             flush() # flush so the new_player is committed to the database
             chosen_lobby.add_player(new_player)
             new_player_id = new_player.player_id
 
-            return { "nickname_is_valid": True, "player_id": new_player_id, "lobby_id_is_valid": True }
+            return { "nickname_is_valid": True, "player_id": new_player_id, "password_is_valid": True }
 
         else:
             raise HTTPException(status_code=400, detail="Unexpected code reached")
