@@ -183,13 +183,13 @@ class Cell(db.Entity):
     def is_trap(self):
         return self.cell_type == "TRAP"
 
-    def getReachable(self, moves, player):
+    def get_reachable(self, moves, player):
 
         reachable = []
 
         if moves > 0:
 
-            reachable = [(n, moves-1) for n in self.getNeighbors()]
+            reachable = [(n, moves-1) for n in self.get_neighbors()]
 
             already = {e for e, c in reachable} | set([self])
             
@@ -197,10 +197,8 @@ class Cell(db.Entity):
             new = []
             while current:
                 for c, d in current:
-                    print(c.cellType)
-                    print(d)
                     if d != 0:
-                        new = new + [(n, d-1) for n in c.getNeighbors() if n not in already]
+                        new = new + [(n, d-1) for n in c.get_neighbors() if n not in already]
                         #new = new + [(fn, d) for fn in c.getFreeNeighbors() if fn not in already]
 
                 reachable = reachable + list(new)
@@ -208,14 +206,14 @@ class Cell(db.Entity):
                 current = list(new)
                 new = list()
             
-            if ("portal-" in player.location.cellType) and (player.in_portal):
-                reachable = reachable + [(fn, moves) for fn in self.getFreeNeighbors()]
+            if ("PORTAL-" in player.location.cell_type) and (player.in_portal):
+                reachable = reachable + [(fn, moves) for fn in self.get_free_neighbors()]
 
-            if (player.location.cellType == "trap") and (player.trapped == trapped_status.CAN_LEAVE.value):
-                reachable = reachable + [(fn, moves) for fn in self.getFreeNeighbors()]
+            if (player.location.cell_type == "TRAP") and (player.trapped == trapped_status.CAN_LEAVE.value):
+                reachable = reachable + [(fn, moves) for fn in self.get_free_neighbors()]
 
-        if ("entrance-" in player.location.cellType) or (player.location.cellType=="room"):
-            reachable =  reachable + [(fn, moves) for fn in self.getFreeNeighbors()]
+        if ("ENTRANCE-" in player.location.cell_type) or (player.location.cell_type=="ROOM"):
+            reachable =  reachable + [(fn, moves) for fn in self.get_free_neighbors()]
     
         return reachable
 
