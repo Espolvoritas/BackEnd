@@ -192,6 +192,9 @@ class Cell(db.Entity):
             if ("portal-" in player.location.cellType) and (player.in_portal):
                 reachable = reachable + [(fn, moves) for fn in self.getFreeNeighbors()]
 
+            if (player.location.cellType == "trap") and (player.trapped == trapped_status.CAN_LEAVE.value):
+                reachable = reachable + [(fn, moves) for fn in self.getFreeNeighbors()]
+
             already = {e for e, c in reachable} | set([self])
             special = {e for e, c in reachable if e.is_special()}         
             current = list(reachable)
