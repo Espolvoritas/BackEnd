@@ -1,227 +1,189 @@
-from fastapi import APIRouter, status, WebSocket, WebSocketDisconnect, HTTPException, Body
+from fastapi import APIRouter, status, WebSocket, WebSocketDisconnect, HTTPException, Body, websockets
 from pony.orm import db_session, select
 from asyncio import sleep
 import logging
-import Misterio.database as db
+
 from Misterio.constants import *
-from Misterio.lobby import ConnectionManager
-from pony.orm import get as dbget
+from Misterio.functions import *
+import Misterio.database as db
+import Misterio.manager as mng
+
 from starlette.responses import Response
 
-class GameBoardManager(ConnectionManager):
-	pickedCard_id = None 
-		
+
 gameBoard = APIRouter(prefix="/gameBoard")
 logger = logging.getLogger("gameboard")
 
-gameBoard_manager = GameBoardManager()
+game_manager = mng.GameBoardManager()
 
-#crashes if position is not valid
-def cellByCoordinates(x, y):
-	return dbget(c for c in db.Cell if c.x == x and c.y == y)
 
-@db_session
-def positionList(lobbyID):
-	positionList = []
-	game = db.Game.get(game_id=lobbyID)
-	for player in list(game.players):
-		positionList.append({"player_id": player.player_id, "color": player.color.color_id ,"x" : player.location.y, "y": player.location.x})
-	return positionList
-
-@db_session
-def getReachable(player_id):
-	moves = []
-	player = db.Player.get(player_id=player_id)
-	reachableCells = player.location.getReachable(player.currentDiceRoll)
-	if reachableCells is not None:
-		for cell, distance in reachableCells:
-			option = {"x": 0, "y": 0, "remaining": 0}
-			#Inverted because keep logic working
-			option["x"] = cell.y
-			option["y"] = cell.x
-			option["remaining"] = distance
-			moves.append(option)
-	return moves
-
-#todo check cost < roll and check newPosition is in movement range
+#todo check cost < roll and check new_position is in movement range
 @gameBoard.post("/moves", status_code=status.HTTP_200_OK)
 async def get_moves(player_id: int = Body(...), x: int = Body(...), y: int = Body(...), remaining: int = Body(...)):
-	room = 0
-	with db_session:
-		player = db.Player.get(player_id=player_id)
-		newPosition = cellByCoordinates(x, y)
-		if not newPosition or player != player.lobby.currentPlayer:
-			raise HTTPException(status.HTTP_400_BAD_REQUEST)
-		if newPosition.cellType == "room":
-			room = getRoomID(newPosition.roomName)
-			player.currentDiceRoll = 0
-		else:
-			player.currentDiceRoll = remaining
-		player.location = newPosition
-		moves=getReachable(player_id)
-		if room == 0 and remaining == 0 and "entrance-" not in newPosition.cellType:
-			await update_turn(player.lobby.game_id)
-			moves=[]
-	await gameBoard_manager.lobby_broadcast({"code": WS_POS_LIST,"positions":positionList(player.lobby.game_id)}, player.lobby.game_id)
-	return {"moves" : moves, "room": room}
-
-def getRoomID(roomName: str):
-	for room in db.Room:
-		if room.name == roomName:
-			return room.value
-
-async def update_turn(lobbyID: int):
-	await gameBoard_manager.lobby_broadcast({"code": WS_CURR_PLAYER, "currentPlayer": get_next_turn(lobbyID)}, lobbyID)
-
-@db_session
-def get_next_turn(lobbyID: int):
-	lobby = db.Game.get(game_id=lobbyID)
-	currentPlayer = lobby.currentPlayer
-	lobby.currentPlayer = currentPlayer.nextPlayer
-	if lobby.currentPlayer.alive:
-		return lobby.currentPlayer.nickName
-	else:	
-		return get_next_turn(lobbyID)
-
-@db_session
-def get_current_turn(lobbyID: int):
-	lobby = db.Game.get(game_id=lobbyID)
-	return lobby.currentPlayer.nickName
-
-@db_session
-def player_in_turn(userID: int):
-	player = db.Player.get(player_id=userID)
-	lobby = player.lobby
-	return userID == lobby.currentPlayer.player_id
-
-@db_session
-def get_card_list(userID: int):
-	cards = list(db.Player.get(player_id=userID).cards)
-	return list(c.cardId for c in cards)
-
-@db_session
-def all_dead(lobbyID: int):
-	game = db.Game.get(game_id=lobbyID)
-	players = game.players
-	for player in players:
-		if player.alive:
-			return False
-	return True
+    room = 0
+    with db_session:
+        player = get_player_by_id(player_id)
+        new_position = get_cell_by_coordinates(x, y)
+        if not new_position or player != player.lobby.game.current_player:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST)
+        if new_position.is_room():
+            room = get_room_cell_id(new_position.room_name)
+            player.set_roll(0)
+        else:
+            player.set_roll(remaining)
+        player.location = new_position
+        moves=get_reachable(player_id)
+        if room == 0 and remaining == 0 and "ENTRANCE-" not in new_position.cell_type:
+            await game_manager.update_turn(player.lobby.lobby_id)
+            moves=[]
+    position_broadcast = {
+        "code": WS_POS_LIST,
+        "positions": get_position_list(player.lobby.lobby_id)
+    }
+    await game_manager.lobby_broadcast(position_broadcast, player.lobby.lobby_id)
+    return {"moves" : moves, "room": room}
 
 @gameBoard.post("/accuse")
-async def accuse(room: int = Body(...), monster: int = Body(...), victim: int = Body(...), userID: int = Body(...)):
-	with db_session:
-		player = db.Player.get(player_id=userID)
-		if not player or not player.lobby or not player.alive:
-			raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="... why?")
-		lobby = player.lobby
-		won = (room == lobby.room.cardId and monster == lobby.culprit.cardId and victim == lobby.victim.cardId)
-		await gameBoard_manager.lobby_broadcast({"code": WS_ACCUSATION, "data": {"player": player.nickName, "won": won}}, lobby.game_id)
-		await update_turn(lobby.game_id)
-		if not won:
-			player.commitDie()
-		if all_dead(lobby.game_id):
-			await gameBoard_manager.lobby_broadcast({"code": WS_LOST}, lobby.game_id)
-
-@gameBoard.websocket("/gameBoard/{userID}")
-async def handleTurn(websocket: WebSocket, userID: int):
-	
-	with db_session:
-		player = db.Player.get(player_id=userID)
-		if player is None or player.lobby is None or gameBoard_manager.exists(userID):
-			await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
-			return
-		lobby = player.lobby
-		await gameBoard_manager.connect(websocket, userID)
-		await gameBoard_manager.send_personal_message({"code" : WS_CURR_PLAYER + WS_CARD_LIST +  
-		WS_POS_LIST, "currentPlayer" : get_current_turn(lobby.game_id), "cards" : get_card_list(userID), 
-		"positions" : positionList(lobby.game_id)}, websocket)
-
-	try:
-		while(True):
-			message = await websocket.receive_json()
-			if message['code'] == "PICK_CARD":
-				gameBoard_manager.pickedCard_id = message['card']
-	except WebSocketDisconnect:
-		gameBoard_manager.disconnect(websocket, lobby.game_id)
-		await gameBoard_manager.lobby_broadcast(await gameBoard_manager.getPlayers(lobby.game_id), lobby.game_id)
+async def accuse(room: int = Body(...), monster: int = Body(...), victim: int = Body(...), player_id: int = Body(...)):
+    with db_session:
+        player = get_player_by_id(player_id)
+        if not player or not player.lobby or not player.alive:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="... why?")
+        lobby = player.lobby
+        won = lobby.game.win_check(monster, victim, room)
+        status_broadcast = {
+            "code": WS_ACCUSATION,
+            "data": {
+                "player": player.nickname,
+                "won": won
+            }
+        }
+        await game_manager.lobby_broadcast(status_broadcast, lobby.lobby_id)
+        await game_manager.update_turn(lobby.lobby_id)
+        if not won:
+            player.commit_die()
+        if all_dead(lobby.lobby_id):
+            await game_manager.lobby_broadcast({"code": WS_LOST}, lobby.lobby_id)
 
 @gameBoard.post("/rollDice", status_code=status.HTTP_200_OK)
-async def rollDice(playerId: int = Body(...), roll: int = Body(...)):
-	if player_in_turn(playerId):
-		with db_session:
-			player = db.Player.get(player_id=playerId)
-			player.currentDiceRoll = int(roll)
-		return {"moves" : getReachable(playerId)}
-	else:
-		raise HTTPException(status_code=403, detail="Player can't roll dice outside his/her turn.")
-
+async def roll_dice(player_id: int = Body(...), roll: int = Body(...)):
+    if player_in_turn(player_id):
+        with db_session:
+            player = get_player_by_id(player_id)
+            player.set_roll(roll)
+        return {"moves" : get_reachable(player_id)}
+    else:
+        raise HTTPException(status_code=403, detail="Player can't roll dice outside his/her turn.")
 
 @gameBoard.post("/checkSuspicion", status_code=status.HTTP_200_OK)
-async def check_suspicion(playerId: int = Body(...), victimId: int = Body(...), culpritId: int = Body(...)):
-	with db_session:
-		player = db.Player.get(player_id=playerId)
-		lobby = player.lobby
-		victim = db.Card.get(cardId=victimId)
-		culprit = db.Card.get(cardId=culpritId)
-		if player is None:
-			raise HTTPException(status_code=400, detail="Player does not exist")
-		if lobby is None:
-			raise HTTPException(status_code=403, detail="Player is not in game.")
-		if lobby.currentPlayer != player:
-			raise HTTPException(status_code=403, detail="Player can't make a suspicion outside his/her turn.")
-		if (player.location.cellType != 'room'):
-			raise HTTPException(status_code=403, detail="Player must be in a room to make a suspicion.")
-		if (victim.cardType != "Victim" or culprit.cardType != "Monster"):
-			raise HTTPException(status_code=403, detail="Suspicion card types are invalid.")
-		else:
-			roomName = player.location.roomName
-			roomId = select(c.cardId for c in db.Card if c.cardName == roomName).first()
-			players = []
-			currplayerId = player.nextPlayer.player_id
-			player.currentDiceRoll = 0
-			for i in range(lobby.playerCount-1):
-				currplayer = db.Player.get(player_id=currplayerId)
-				currplayerCards = [c.cardId for c in currplayer.cards]
-				players.append([currplayer.player_id, currplayer.nickName, currplayerCards])
-				currplayerId = currplayer.nextPlayer.player_id
-			players.reverse()
-			suspicion = [culpritId, victimId, roomId]
-	await gameBoard_manager.almost_lobby_broadcast({'code': WS_CURR_PLAYER + WS_SUSPICION,
-		'currentPlayer':player.nickName, 'victim': victimId, 'culprit': culpritId, 'room': roomId}, gameBoard_manager.get_websocket(playerId,lobby.game_id),lobby.game_id)
-	await update_turn(lobby.game_id)
-	suspicionCard, responsePlayer = await checkSuspicion_players(players, player.nickName, suspicion, lobby.game_id)
-	return {'responsePlayer': responsePlayer, 'suspicionCard': suspicionCard}
-	
-async def checkSuspicion_players(players: list, suspicionPlayer: str, suspicion: list, lobbyId: int):
-	responded = False
-	responsePlayer = ""
-	suspicionCard = 0
-	while (not responded and len(players)>0):
-		nextPlayer = players.pop()
-		matches = []
-		for card in suspicion:
-			if card in nextPlayer[2]:
-				matches.append(card)
-		responsePlayer = nextPlayer[1]
-		if matches:
-			websocket = gameBoard_manager.get_websocket(nextPlayer[0], lobbyId)
-			if len(matches) > 1:
-				responseMessage = {'code': WS_PICK_CARD, 'matchingCards': matches}
-				#Send next player the option to pick a card
-				await gameBoard_manager.send_personal_message(responseMessage, websocket)
-				while gameBoard_manager.pickedCard_id is None:
-					#Await for next player to pick a card to show (maybe implement timer)
-					await sleep(1)
-				suspicionCard = gameBoard_manager.pickedCard_id
-				gameBoard_manager.pickedCard_id = None
-			else:
-				suspicionCard = matches.pop()
-				responseMessage = {'code': WS_SENT_CARD_NOTIFY, 'suspicionPlayer': suspicionPlayer, 'card': suspicionCard}
-				await gameBoard_manager.send_personal_message(responseMessage, websocket)
-			responded = True
-		responseBroadcast = {'code': WS_SUSPICION_STATUS , 'responded': responded, 'suspicionPlayer': suspicionPlayer, 'responsePlayer': responsePlayer}
-		#Broadcast suspicion status to all players
-		await gameBoard_manager.lobby_broadcast(responseBroadcast, lobbyId)
-	
-	return suspicionCard, responsePlayer
+async def check_suspicion(player_id: int = Body(...), victim_id: int = Body(...), monster_id: int = Body(...)):
+    with db_session:
+        player = get_player_by_id(player_id)
+        victim = get_card_by_id(victim_id)
+        monster = get_card_by_id(monster_id)
+        if player is None:
+            raise HTTPException(status_code=400, detail="Player does not exist")
+        lobby = player.lobby
+        if lobby is None:
+            raise HTTPException(status_code=403, detail="Player is not in game.")
+        if not player_in_turn(player_id):
+            raise HTTPException(status_code=403, detail="Player can't make a suspicion outside his/her turn.")
+        if not player.location.is_room():
+            raise HTTPException(status_code=403, detail="Player must be in a room to make a suspicion.")
+        if (not victim.is_victim() or not monster.is_monster()):
+            raise HTTPException(status_code=403, detail="Suspicion card types are invalid.")
+        else:
+            room_id = get_room_card_id(player.location.room_name)
+            players = []
+            currplayer_id = player.next_player.player_id
+            player.set_roll(0)
+            for i in range(lobby.player_count-1):
+                currplayer = get_player_by_id(currplayer_id)
+                currplayer_cards = get_card_list(currplayer_id)
+                players.append([currplayer.player_id, currplayer.nickname, currplayer_cards])
+                currplayer_id = currplayer.next_player.player_id
+            players.reverse()
+            suspicion = [monster_id, victim_id, room_id]
+
+    suspicion_broadcast = {
+        "code": WS_CURR_PLAYER + WS_SUSPICION,
+        "current_player": player.nickname,
+        "victim": victim_id,
+        "monster": monster_id,
+        "room": room_id
+    }
+    sus_websocket = game_manager.get_websocket(player_id,lobby.lobby_id)
+    await game_manager.almost_lobby_broadcast(suspicion_broadcast, [sus_websocket],lobby.lobby_id)
+    await game_manager.update_turn(lobby.lobby_id)
+    suspicion_card, response_player = await check_player_cards(players, player.nickname, sus_websocket, suspicion, lobby.lobby_id)
+    return {"response_player": response_player, "suspicion_card": suspicion_card}
+    
+async def check_player_cards(players: list, suspicion_player: str, sus_websocket: WebSocket, suspicion: list, lobby_id: int):
+    responded = False
+    response_player = ""
+    suspicion_card = 0
+    while (not responded and len(players)>0):
+        next_player = players.pop()
+        matches = []
+        for card in suspicion:
+            if card in next_player[2]:
+                matches.append(card)
+        response_player = next_player[1]
+        res_websocket = game_manager.get_websocket(next_player[0], lobby_id)
+        if matches:
+            if len(matches) > 1:
+                response_message = {"code": WS_PICK_CARD, "matching_cards": matches}
+                #Send next player the option to pick a card
+                await game_manager.send_personal_message(response_message, res_websocket)
+                while game_manager.picked_card_id is None:
+                    #Await for next player to pick a card to show (maybe implement timer)
+                    await sleep(1)
+                suspicion_card = game_manager.picked_card_id
+                game_manager.picked_card_id = None
+            else:
+                suspicion_card = matches.pop()
+                response_message = {
+                    "code": WS_SENT_CARD_NOTIFY,
+                    "suspicion_player": suspicion_player,
+                    "card": suspicion_card
+                }
+                await game_manager.send_personal_message(response_message, res_websocket)
+            responded = True
+        response_broadcast = {
+            "code": WS_SUSPICION_STATUS,
+            "responded": responded,
+            "suspicion_player": suspicion_player,
+            "response_player": response_player
+        }
+        #Broadcast suspicion status to all players except who responded and who made the suspicion
+        await game_manager.almost_lobby_broadcast(response_broadcast, [res_websocket, sus_websocket], lobby_id)
+    
+    return suspicion_card, response_player
+
+
+@gameBoard.websocket("/gameBoard/{player_id}")
+async def handle_turn(websocket: WebSocket, player_id: int):
+    
+    with db_session:
+        player = get_player_by_id(player_id)
+        if player is None or player.lobby is None or game_manager.exists(player_id):
+            await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+            return
+        lobby = player.lobby
+        await game_manager.connect(websocket, player_id)
+        message = {
+            "code": WS_CURR_PLAYER + WS_CARD_LIST +    WS_POS_LIST,
+            "current_player": get_current_turn(lobby.lobby_id),
+            "cards": get_card_list(player_id),
+            "positions": get_position_list(lobby.lobby_id)
+        }
+        await game_manager.send_personal_message(message,websocket)
+
+    try:
+        while(True):
+            message = await websocket.receive_json()
+            if message["code"] == "PICK_CARD":
+                game_manager.picked_card_id = message["card"]
+    except WebSocketDisconnect:
+        game_manager.disconnect(websocket, lobby.lobby_id)
+        await game_manager.lobby_broadcast(await game_manager.get_players(lobby.lobby_id), lobby.lobby_id)

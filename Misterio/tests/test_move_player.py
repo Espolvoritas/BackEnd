@@ -1,16 +1,30 @@
 from fastapi.testclient import TestClient
-from pony.orm import db_session, flush
-import string
+from pony.orm import db_session
 import logging
-import random
 from Misterio.testing_utils import *
 from Misterio.server import app
+from Misterio.functions import get_cell_by_coordinates
 import Misterio.database as db
 
 client = TestClient(app)
 logger = logging.getLogger("gameboard")
 
-def test_right_accusation():
+@db_session
+def find_entrance(movement):
+    for possibility in movement:
+        cell = get_cell_by_coordinates(possibility["x"], possibility["y"])
+        if "ENTRANCE-" in cell.cell_type :
+            return possibility
+
+@db_session
+def find_room(movement):
+    for possibility in movement:
+        cell = get_cell_by_coordinates(possibility["x"], possibility["y"])
+        print(cell)
+        if "ROOM" == cell.cell_type :
+            return possibility
+
+def test_bad_move():
     db.clear_tables()
     host = get_random_string(6)
     lobby_id = create_game_post(host, client).json()["lobby_id"]
@@ -19,14 +33,11 @@ def test_right_accusation():
     
     connect_and_start_game_2_players(expected_players, client)
 
+    roll = random.randint(1,6)
     with db_session:
-        lobby = db.Lobby.get(lobby_id=lobby_id)
-        current_player = lobby.game.current_player
+        current_player = db.Lobby.get(lobby_id=lobby_id).game.current_player
         current_player_nickName = current_player.nickname
         next_player = current_player.next_player
-        room = lobby.game.room.card_id
-        monster = lobby.game.monster.card_id
-        victim = lobby.game.victim.card_id
 
     with client.websocket_connect("/gameBoard/" + str(current_player.player_id)) as websocket1:
         data = websocket1.receive_json()
@@ -35,16 +46,17 @@ def test_right_accusation():
             data = websocket2.receive_json()
             try:
                 assert current_player_nickName == data["current_player"]
-                accuse_post(current_player.player_id,room, monster, victim, client)
-                data = websocket1.receive_json()
-                assert data["data"]["won"] == True
+                response = roll_dice_post(current_player.player_id, roll, client)
+                assert (response.status_code == 200)
+                response = move_post(current_player.player_id, 999, 999, 0,client)
+                assert response.status_code == 400
                 websocket2.close()
                 data = websocket1.receive_json()
                 websocket1.close()
             except KeyboardInterrupt:
                 websocket1.close()
 
-def test_wrong_accusation():
+def test_move():
     db.clear_tables()
     host = get_random_string(6)
     lobby_id = create_game_post(host, client).json()["lobby_id"]
@@ -53,27 +65,33 @@ def test_wrong_accusation():
     
     connect_and_start_game_2_players(expected_players, client)
 
+    roll = random.randint(1,6)
     with db_session:
-        lobby = db.Lobby.get(lobby_id=lobby_id)
-        current_player = lobby.game.current_player
+        current_player = db.Lobby.get(lobby_id=lobby_id).game.current_player
         current_player_nickName = current_player.nickname
         next_player = current_player.next_player
-        room = lobby.game.room.card_id
-        monster = lobby.game.monster.card_id
-        victim = lobby.game.victim.card_id
 
     with client.websocket_connect("/gameBoard/" + str(current_player.player_id)) as websocket1:
         data = websocket1.receive_json()
         with client.websocket_connect("/gameBoard/" + str(next_player.player_id)) as websocket2:
-            #data = websocket1.receive_json()
             data = websocket2.receive_json()
             try:
                 assert current_player_nickName == data["current_player"]
-                accuse_post(current_player.player_id,room, (monster-1), victim, client)
+                response = roll_dice_post(current_player.player_id, roll, client)
+                assert (response.status_code == 200)
+                print("RESPONSE: ",response.json())
+                possible_moves = response.json()["moves"]
+                movement = random.choice(possible_moves)
+                response = move_post(current_player.player_id, movement["x"], movement["y"], movement["remaining"],client)
+                assert response.status_code == 200
+                print(response)
                 data = websocket1.receive_json()
-                assert data["data"]["won"] == False
+                print(data)
+                data = websocket2.receive_json()
+                print("Move broadcast", data)
                 websocket2.close()
                 data = websocket1.receive_json()
                 websocket1.close()
             except KeyboardInterrupt:
+                websocket2.close()
                 websocket1.close()

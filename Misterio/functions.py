@@ -1,80 +1,111 @@
-import string
-import random
-from pony.orm import db_session
-from fastapi.testclient import TestClient
-from pony.orm import get as dbget
-
+from pony.orm import db_session, select
+from Misterio.constants import *
+from Misterio.enums import Room
 import Misterio.database as db
 
-#aux function for getting random strings
-def get_random_string(length):
-    # choose from all lowercase letter
-    letters = string.ascii_lowercase
-    result_str = ''.join(random.choice(letters) for i in range(length))
-    return result_str
+#crashes if position is not valid
+@db_session
+def get_cell_by_coordinates(x, y):
+    return select(c for c in db.Cell if c.x == x and c.y == y).first()
 
-def cellByCoordinates(x, y):
-	return dbget(c for c in db.Cell if c.x == x and c.y == y)
+def get_room_cell_id(room_name: str):
+    for room in Room:
+        if room.name == room_name:
+            return room.value
 
-def add_player(player: db.Player, game_id: str):
-    with db_session:  
-	    game = db.Game.get(game_id=game_id)
-	    game.addPlayer(player)
+@db_session
+def get_room_card_id(room_name: str):
+    card_id = db.Card.get(card_name=room_name).card_id
+    return card_id
 
-def create_players(quantity: int, game_id: int):
-	player_list = []
-	with db_session:
-		for x in range(quantity):
-			new_player = db.Player(nickName=get_random_string(6))
-			add_player(new_player, game_id)
-			player_list.append(new_player.nickName)
-		return player_list
+@db_session
+def get_position_list(lobby_id: int):
+    position_list = []
+    lobby = get_lobby_by_id(lobby_id)
+    for player in list(lobby.players):
+        position_list.append(
+            {
+                "player_id": player.player_id,
+                 "color": player.color.color_id,
+                 "x" : player.location.y, 
+                 "y": player.location.x
+            }
+        )
+    return position_list
 
-def create_game_post(nickName: str, client: TestClient):
-	return client.post("/lobby/createNew",
-		headers={"accept": "application/json",
-				"Content-Type" : "application/json"},
-				json={"name": get_random_string(6), "host": nickName}
-				)
+@db_session
+def get_reachable(player_id: int):
+    moves = []
+    player = get_player_by_id(player_id)
+    reachable_cells = player.location.get_reachable(player.current_dice_roll)
+    if reachable_cells is not None:
+        for cell, distance in reachable_cells:
+            option = {"x": 0, "y": 0, "remaining": 0}
+            #Inverted because keep logic working
+            option["x"] = cell.y
+            option["y"] = cell.x
+            option["remaining"] = distance
+            moves.append(option)
+    return moves
 
-def startGame_post(userID: int, client: TestClient):
-	return client.post("/lobby/startGame",
-				headers={"accept": "application/json",
-				"Content-Type" : "application/json"},
-				json=f'{userID}'
-				)
+@db_session
+def get_next_turn(lobby_id: int):
+    lobby = get_lobby_by_id(lobby_id)
+    current_player = lobby.game.current_player
+    lobby.game.current_player = current_player.next_player
+    if lobby.game.current_player.alive:
+        return lobby.game.current_player.nickname
+    else:    
+        get_next_turn(lobby_id)
 
-def pickColor_put(userID: int, color: int , client: TestClient):
-	return client.put("/lobby/pickColor",
-				headers={"accept": "application/json",
-				"Content-Type" : "application/json"},
-				json={"player_id": userID, "color": color}
-				)
+@db_session
+def get_current_turn(lobby_id: int):
+    lobby = get_lobby_by_id(lobby_id)
+    return lobby.game.current_player.nickname
 
-def suspicion_post(userID: int, victimId: int, culpritId: int, client: TestClient):
-	return client.post("/gameBoard/checkSuspicion",
-				headers={"accept": "application/json",
-				"Content-Type" : "application/json"},
-				json={'playerId': userID, 'victimId': victimId, 'culpritId': culpritId}
-				)
+@db_session
+def player_in_turn(player_id: int):
+    player = get_player_by_id(player_id)
+    lobby = player.lobby
+    return player_id == lobby.game.current_player.player_id
 
-def rollDice_post(userID: int, roll: int, client: TestClient):
-	return client.post("/gameBoard/rollDice",
-				headers={"accept": "application/json",
-				"Content-Type" : "application/json"},
-				json={'playerId': userID, 'roll': roll}
-				)
+@db_session
+def get_card_list(player_id: int):
+    cards = list(db.Player.get(player_id=player_id).cards)
+    return list(c.card_id for c in cards)
 
-def move_post(userID: int, x: int, y: int, remaining: int,client: TestClient):
-	return client.post("/gameBoard/moves",
-				headers={"accept": "application/json",
-				"Content-Type" : "application/json"},
-				json={'player_id': userID, 'x': x, "y": y, "remaining": remaining}
-				)
+@db_session
+def all_dead(lobby_id: int):
+    lobby = db.Lobby.get(lobby_id=lobby_id)
+    players = lobby.players
+    for player in players:
+        if player.alive:
+            return False
+    return True
 
-def accuse_post(userID: int, room: int, monster: int, victim: int,client: TestClient):
-	return client.post("/gameBoard/accuse",
-				headers={"accept": "application/json",
-				"Content-Type" : "application/json"},
-				json={'room': room, 'monster': monster, "victim": victim, "userID": userID}
-				)
+@db_session
+def get_color_list(lobby_id: int):
+    color_list = []
+    lobby = db.Lobby.get(lobby_id=lobby_id)
+    if lobby:
+        color_query = lobby.get_available_colors()
+        for c in color_query:
+            color_list.append(c.color_id)
+    return color_list
+
+# Database getters
+
+@db_session
+def get_lobby_by_id(lobby_id: int):
+    lobby = db.Lobby.get(lobby_id=lobby_id)
+    return lobby
+
+@db_session
+def get_player_by_id(player_id: int):
+    player = db.Player.get(player_id=player_id)
+    return player
+
+@db_session
+def get_card_by_id(card_id: int):
+    card = db.Card.get(card_id=card_id)
+    return card

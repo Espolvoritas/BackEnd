@@ -1,319 +1,263 @@
 from pony.orm import Database, PrimaryKey, Optional, Set, Required
-from pony.orm import select, db_session, flush, count
-from random import shuffle, choice
-from enum import Enum
-from pony.orm import flush
+from pony.orm import select, db_session, count
 from random import shuffle, choice
 
-from Misterio.board import makeBoard
+from Misterio.board import make_board
+from Misterio.enums import *
 
 db = Database()
 
-class ColorCode(Enum):
-    RED=1
-    GREEN=2
-    BLUE=3
-    WHITE=4
-    BLACK=5
-    YELLOW=6
-    PINK=7
-    ORANGE=8
-
 class Color(db.Entity):
     color_id = PrimaryKey(int, auto=True)
-    colorName = Required(str)
-    players = Set('Player', reverse='color')
+    color_name = Required(str)
 
-class CardValue(Enum):
-    pass
-
-class Monster(CardValue):
-    DRACULA = 1
-    FRANKENSTEIN = 2
-    WEREWOLF = 3
-    GHOST = 4
-    MUMMY = 5
-    JEKYLL = 6
-
-class Victim(CardValue):
-    COUNT = 7
-    COUNTESS = 8
-    HOUSEKEEPER = 9
-    BUTLER = 10
-    MAIDEN = 11
-    GARDENER = 12
-
-class Room(CardValue):
-    LOBBY = 13
-    LAB = 14
-    LIBRARY = 15
-    CELLAR = 16
-    ROOM = 17
-    PANTHEON = 18
-    HALL = 19
-    GARAGE = 20
-
-# class Salem(CardValue):
-#    SALEM = 21
+    #Relationship attributes
+    players = Set("Player", reverse="color")
 
 class Card(db.Entity):
-    cardId = PrimaryKey(int, auto=True)
-    cardName = Optional(str)
-    cardType = Optional(str)
+    card_id = PrimaryKey(int, auto=True)
+    card_name = Optional(str)
+    card_type = Optional(str)
+    misterio_monster = Set("Game", reverse="monster")
+    misterio_victim = Set("Game", reverse="victim")
+    misterio_room = Set("Game", reverse="room")
     owners = Set("Player", reverse="cards")
-    culpritOf = Set("Game", reverse="culprit")
-    victimOf = Set("Game", reverse="victim")
-    roomOf = Set("Game", reverse="room")
 
-    def isMonster(self):
-        return self.cardType == "Monster"
+    def is_monster(self):
+        return self.card_type == "MONSTER"
     
-    def isVictim(self):
-        return self.cardType == "Victim"
+    def is_victim(self):
+        return self.card_type == "VICTIM"
 
-    def isRoom(self):
-        return self.cardType == "Room"
+    def is_room(self):
+        return self.card_type == "ROOM"
 
     def assign(self, player):
         player.cards.add(self)
 
-class Game(db.Entity):
-    game_id = PrimaryKey(int, auto=True) 
+class Lobby(db.Entity):
+    lobby_id = PrimaryKey(int, auto=True) 
     name = Required(str)
-    host = Required('Player', reverse='hostOf')
-    players = Set('Player', reverse='lobby')
-    currentPlayer = Optional('Player', reverse="currentPlayerOf")
-    playerCount = Required(int, default=0)
-    isStarted = Required(bool, default=False)
-    culprit = Optional(Card, reverse="culpritOf")
-    room = Optional(Card, reverse="roomOf")
-    victim = Optional(Card, reverse="victimOf")
-    board = Set("Cell", reverse="game")
+    player_count = Required(int, default=0)
+    is_started = Required(bool, default=False)
+    #Relationship attributes
+    host = Required("Player", reverse="host_of")
+    players = Set("Player", reverse="lobby")
+    game = Optional("Game", reverse="lobby")
 
-    def addPlayer(self, player):
-        if (self.playerCount <= 6):
+    def add_player(self, player):
+        if (self.player_count <= 6):
             self.players.add(player)
-            self.playerCount += 1   
-        colors = self.getAvailableColors()
+            self.player_count += 1   
+        colors = self.get_available_colors()
         if colors:
-            player.setColor(choice(colors))
-        
-    def getPlayers(self):
-        return select(p for p in self.players)
-
-    def fillEnvelope(self):
-        #Get the available cards
-        victimCards = select(c for c in db.Card if c.cardType == "Victim")
-        monsterCards = select(c for c in db.Card if c.cardType == "Monster")
-        roomCards = select(c for c in db.Card if c.cardType == "Room")
-        # Fill the "Misterio" envelope
-        self.culprit=choice(list(monsterCards))
-        self.room=choice(list(roomCards))
-        self.victim=choice(list(victimCards))
-
-    def shuffleDeck(self):
-        self.fillEnvelope()
-        envelope = select((g.victim,g.culprit,g.room) for g in Game if g.game_id == self.game_id)
-        availableCards = list(select(c for c in db.Card if c not in envelope.first()))
-        shuffle(availableCards)
-        player = self.currentPlayer
-        for card in availableCards:
-            player.cards.add(card)
-            player = player.nextPlayer
-        minCards = count(player.cards)
-        players = list(select(p for p in self.players if count(p.cards) == minCards))
-        self.currentPlayer = choice(players)
-
-    def sortPlayers(self):
-        '''Assign each player who joined the game a `.nextPlayer` randomly.'''
-        shuffledPlayers = list([p for p in self.players])
-        shuffle(shuffledPlayers)
-        for index, player in enumerate(shuffledPlayers):
-            player.nextPlayer = shuffledPlayers[(index + 1) % len(shuffledPlayers)]
-        self.currentPlayer = shuffledPlayers[0]
-
-    def getAvailableColors(self):
+            player.set_color(choice(colors))
+    
+    def get_available_colors(self):
         #Returns a list of type Color elements that have not been assigned
-        player_colors = (select (p.color for p in db.Player if p.lobby.game_id == self.game_id))
-        colors = list(select(c for c in db.Color if c not in player_colors))
+        player_colors = (select (p.color for p in Player if p.lobby.lobby_id == self.lobby_id))
+        colors = list(select(c for c in Color if c not in player_colors))
         return colors
 
-    def setStartingPositions(self):
-        players = list(select(p for p in self.players))
-        entrances = list(select(c for c in Cell if c.cellType == "entrance"))
+class Game(db.Entity):
+    game_id = PrimaryKey(int, auto=True) 
+
+    #Relationship attributes
+    lobby = Required(Lobby, reverse="game")
+    current_player = Optional("Player", reverse="current_player_of")
+    monster = Optional(Card, reverse="misterio_monster")
+    victim = Optional(Card, reverse="misterio_victim")
+    room = Optional(Card, reverse="misterio_room")
+    board = Set("Cell", reverse="game")
+
+    def fill_envelope(self):
+        #Get the available cards
+        victim_cards = select(c for c in Card if c.card_type == "VICTIM")
+        monster_cards = select(c for c in Card if c.card_type == "MONSTER")
+        room_cards = select(c for c in Card if c.card_type == "ROOM")
+        # Fill the "Misterio" envelope
+        self.monster=choice(list(monster_cards))
+        self.room=choice(list(room_cards))
+        self.victim=choice(list(victim_cards))
+
+    def shuffle_deck(self):
+        self.fill_envelope()
+        envelope = [self.monster, self.victim, self.room]
+        available_cards = list(select(c for c in Card if c not in envelope))
+        shuffle(available_cards)
+        player = self.current_player
+        for card in available_cards:
+            player.cards.add(card)
+            player = player.next_player
+        min_cards = count(player.cards)
+        players = list(select(p for p in self.lobby.players if count(p.cards) == min_cards))
+        self.current_player = choice(players)
+
+    def sort_players(self):
+        shuffled_players = list([p for p in self.lobby.players])
+        
+        shuffle(shuffled_players)
+        for index, player in enumerate(shuffled_players):
+            player.set_next(shuffled_players[(index + 1) % len(shuffled_players)])
+        self.current_player = shuffled_players[0]
+ 
+    def set_starting_positions(self):
+        players = list(select(p for p in self.lobby.players))
+        entrances = list(select(c for c in Cell if c.cell_type == "START_CELL"))
         shuffle(players)
         shuffle(entrances)
         locations = zip(players, entrances)
         for p, e in locations:
             p.location = e
+    
+    def win_check(self, monster, victim, room):
+        monster_correct = (self.monster.card_id == monster)
+        victim_correct = (self.victim.card_id == victim)
+        room_correct = (self.room.card_id == room)
+        return (monster_correct and victim_correct and room_correct)
 
 class Player(db.Entity):
     player_id = PrimaryKey(int, auto=True) 
-    nickName = Required(str)
-    hostOf = Optional(Game)
-    lobby = Optional(Game)
+    nickname = Required(str)
     alive = Required(bool, default=True)
-    currentPlayerOf = Optional(Game, reverse="currentPlayer")
-    nextPlayer = Optional('Player', reverse="previousPlayer")
-    previousPlayer = Optional('Player', reverse="nextPlayer")
-    currentDiceRoll = Optional(int, default=0)
-    color = Optional(Color, reverse='players')
-    cards = Set(Card, reverse="owners")
-    location = Optional("Cell", reverse="occupiers")
+    current_dice_roll = Optional(int, default=0)
     trapped = Optional(bool)
-    inRoom = Optional(bool)
+    
+    #Relationship attributes
+    color = Optional(Color, reverse="players")
+    next_player = Optional("Player", reverse="next_player_of")
+    lobby = Optional(Lobby, reverse="players")
+    location = Optional("Cell", reverse="occupiers")
+    cards = Set(Card, reverse="owners")
 
-    def setColor(self, color):
+    #Reverse Relationships
+    host_of = Optional(Lobby, reverse="host")
+    current_player_of = Optional(Game, reverse="current_player")
+    next_player_of = Optional("Player", reverse="next_player")
+
+    def set_color(self, color):
         self.color = color
 
-    def setNext(self, nextPlayer):
-        self.nextPlayer = nextPlayer
+    def set_next(self, next_player):
+        self.next_player = next_player
 
-    def commitDie(self):
+    def set_roll(self, dice_roll):
+        self.current_dice_roll = dice_roll
+
+    def commit_die(self):
         self.alive=False
 
 class Cell(db.Entity):
-    # The neighbors field stores the set of immediately adjacent cells
-    # which require players to spend a move when changing positions.
-    # freeNeighbors stores the set of adjacent cells which
-    # do not require players to spend a move (for instance,
-    # moving to a trap from another is a "free" move, same as moving from
-    # a room entrance to the room it leads to)
-    cellId = PrimaryKey(int, auto=True)
+    cell_id = PrimaryKey(int, auto=True)
+    x = Required(int)
+    y = Required(int)
+    room_name = Optional(str)
+    cell_type = Required(str)
+    
+    #Relationship attributes
     game = Optional(Game, reverse="board")
     occupiers = Set(Player, reverse="location")
-    neighbors = Set("Cell", reverse="neighborOf")
-    neighborOf = Set("Cell", reverse="neighbors")
-    freeNeighbors = Set("Cell", reverse="freeNeighborOf")
-    freeNeighborOf = Set("Cell", reverse="freeNeighbors")
-    isTrap = Optional(bool)
-    isRoom = Optional(bool)
-    roomName = Optional(str)
-    x = Optional(int)
-    y = Optional(int)
-    cellType = Optional(str)
+    neighbors = Set("Cell", reverse="neighbor_of")
+    free_neighbors = Set("Cell", reverse="free_neighbor_of")
+   
+    #Reverse Relationships
+    neighbor_of = Set("Cell", reverse="neighbors")
+    free_neighbor_of = Set("Cell", reverse="free_neighbors")
 
-    def getNeighbors(self):
+    def get_neighbors(self):
         return [c for c in self.neighbors]
 
-    def getFreeNeighbors(self):
-        return [c for c in self.freeNeighbors]
+    def get_free_neighbors(self):
+        return [c for c in self.free_neighbors]
 
-    def isSpecial(self):
-        return self.cellType not in ["plain"] and "entrance" not in self.cellType
+    def is_special(self):
+        return self.cell_type not in ["PLAIN"] and "START_CELL" not in self.cell_type
 
-    def getReachable(self, moves):
+    def is_room(self):
+        return self.cell_type == "ROOM"
+    
+    def is_trap(self):
+        return self.cell_type == "TRAP"
+
+    def get_reachable(self, moves):
 
         if moves == 0:
-            return [(fn, 0) for fn in self.getFreeNeighbors()]
-
+            return [(fn, 0) for fn in self.get_free_neighbors()]
         if moves > 0:
-
-            reachable = [(n, moves-1) for n in self.getNeighbors()]
-            reachable = reachable + [(fn, moves) for fn in self.getFreeNeighbors()]
-
+            reachable = [(n, moves-1) for n in self.get_neighbors()]
+            reachable = reachable + [(fn, moves) for fn in self.get_free_neighbors()]
             already = {e for e, c in reachable} | set([self])
-            special = {e for e, c in reachable if e.isSpecial()}
-            
+            special = {e for e, c in reachable if e.is_special()}         
             current = list(reachable)
             new = []
-
             while current:
-
                 for c, d in current:
-                    if not c.isTrap:
+                    if not c.is_trap():
                         if d != 0:
-                            new = new + [(n, d-1) for n in c.getNeighbors() if n not in already]
-                        #new = new + [(fn, d) for fn in c.getFreeNeighbors() if fn not in already]
-
+                            new = new + [(n, d-1) for n in c.get_neighbors() if n not in already]
                 reachable = reachable + list(new)
                 already = already | {c for c, d in new}
                 current = list(new)
                 new = list()
-
-            print(reachable)
-
             return reachable
 
-db.bind('sqlite', 'database.sqlite', create_db=True)  # Connect object `db` with database.
+db.bind("sqlite", "database.sqlite", create_db=True)  # Connect object `db` with database.
 db.generate_mapping(create_tables=True)  # Generate database
 
 # Functions to test and fill database
-def fillCards():
+def fill_cards():
     with db_session:
         for card in Monster:
-            Card(cardName=card.name, cardType="Monster")
+            Card(card_name=card.name, card_type="MONSTER")
         for card in Victim:
-            Card(cardName=card.name, cardType="Victim")
+            Card(card_name=card.name, card_type="VICTIM")
         for card in Room:
-            Card(cardName=card.name, cardType="Room")
+            Card(card_name=card.name, card_type="ROOM")
 
-def fillCards():
-    with db_session:
-        for card in Monster:
-            monster = Card(cardName=card.name, cardType="Monster")
-        for card in Victim:
-            victim = Card(cardName=card.name, cardType="Victim")
-        for card in Room:
-            room = Card(cardName=card.name, cardType="Room")
-
-def fillCards():
-    with db_session:
-        for card in Monster:
-            monster = Card(cardName=card.name, cardType="Monster")
-        for card in Victim:
-            victim = Card(cardName=card.name, cardType="Victim")
-        for card in Room:
-            room = Card(cardName=card.name, cardType="Room")
-
-def fillColors():
-    #Colors shouldn't be modified outside this session
+def fill_colors():
+    #Colors shouldn"t be modified outside this session
     with db_session:
         for color in ColorCode:
-            color = Color(colorName=color.name)
+            color = Color(color_name=color.name)
 
-def fillCells():
-    roomNames = [r.name for r in Room]
+def fill_cells():
+    room_names = [r.name for r in Room]
 
-    cells, neighbors, freeNeighbors = makeBoard()
-    cellIndex = {}
-
+    cells, neighbors, free_neighbors = make_board()
+    cell_index = {}
     with db_session:
         for cx, cy, t in cells:
-            cellIndex[(cx, cy, t)] = Cell(x=cx, y=cy, cellType=t)
+            cell_index[(cx, cy, t)] = Cell(x=cx, y=cy, cell_type=t)
 
-            if t in roomNames:
-                cellIndex[(cx, cy, t)].roomName = t
-                cellIndex[(cx, cy, t)].cellType = "room"
-                cellIndex[(cx, cy, t)].isRoom = True
-            if "trap" in t:
-                cellIndex[(cx, cy, t)].isTrap = True
-
+            if t in room_names:
+                cell_index[(cx, cy, t)].room_name = t
+                cell_index[(cx, cy, t)].cell_type = "ROOM"
+                cell_index[(cx, cy, t)].is_room = True
+            if "TRAP" in t:
+                cell_index[(cx, cy, t)].cell_type = "TRAP"
 
         for c in cells:
             for n in neighbors[c]:
-                cellIndex[c].neighbors.add(cellIndex[n])
-
+                cell_index[c].neighbors.add(cell_index[n])
 
         for c in cells:
-            for fn in freeNeighbors[c]:
-                cellIndex[c].freeNeighbors.add(cellIndex[fn])
+            for fn in free_neighbors[c]:
+                cell_index[c].free_neighbors.add(cell_index[fn])
         
-
-
 def clear_tables():
-    db.Player.cards.drop_table(with_all_data=True)
-    db.Cell.neighbors.drop_table(with_all_data=True)
-    db.Cell.freeNeighbors.drop_table(with_all_data=True)
-    db.drop_table(db.Player, if_exists=True, with_all_data=True)
-    db.drop_table(db.Game, if_exists=True, with_all_data=True)
-    db.drop_table(db.Card, if_exists=True, with_all_data=True)
-    db.drop_table(db.Color, if_exists=True, with_all_data=True)
-    db.drop_table(db.Cell, if_exists=True, with_all_data=True)
+    Player.cards.drop_table(with_all_data=True)
+    Cell.neighbors.drop_table(with_all_data=True)
+    Cell.free_neighbors.drop_table(with_all_data=True)
+    db.drop_table(Player, if_exists=True, with_all_data=True)
+    db.drop_table(Game, if_exists=True, with_all_data=True)
+    db.drop_table(Lobby, if_exists=True, with_all_data=True)
+    db.drop_table(Card, if_exists=True, with_all_data=True)
+    db.drop_table(Color, if_exists=True, with_all_data=True)
+    db.drop_table(Cell, if_exists=True, with_all_data=True)
 
     db.create_tables()
-    fillColors()
-    fillCards()
-    fillCells()
+    fill_colors()
+    fill_cards()
+    fill_cells()
 
 clear_tables()

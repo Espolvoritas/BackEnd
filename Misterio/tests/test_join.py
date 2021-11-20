@@ -1,7 +1,5 @@
 from fastapi.testclient import TestClient
 from pony.orm import db_session, flush
-import pytest
-from fastapi import WebSocketDisconnect
 from Misterio.server import app
 import Misterio.database as db
 
@@ -12,31 +10,31 @@ def test_join():
 
     with db_session:
        
-        player1 = db.Player(nickName="foo1")
-        player2 = db.Player(nickName="foo2")
-        player3 = db.Player(nickName="foo3")
+        player1 = db.Player(nickname="foo1")
+        player2 = db.Player(nickname="foo2")
+        player3 = db.Player(nickname="foo3")
         flush()
         
-        game = db.Game(name="fooGame", host=player2, isStarted=False)
+        game = db.Lobby(name="fooGame", host=player2, is_started=False)
         flush()
-        game.addPlayer(player1)
+        game.add_player(player1)
         flush()
-        game.addPlayer(player2)
+        game.add_player(player2)
         flush()
-        game.addPlayer(player3)
+        game.add_player(player3)
         flush()
 
-        game_id = game.game_id
+        lobby_id = game.lobby_id
         taken_nickname = "foo2"
         free_nickname = "foo4"
 
     response1 = client.post("/lobby/joinCheck",
                         headers={"accept": "application/json", "Content-Type" : "application/json"},
-                        json={"gameId": game_id, "playerNickname": taken_nickname})
+                        json={"lobby_id": lobby_id, "player_nickname": taken_nickname})
 
     response2 = client.post("/lobby/joinCheck",
                         headers={"accept": "application/json", "Content-Type" : "application/json"},
-                        json={"gameId": game_id, "playerNickname": free_nickname}).json()
+                        json={"lobby_id": lobby_id, "player_nickname": free_nickname}).json()
 
     print(response1)
     print(response2)
@@ -44,4 +42,4 @@ def test_join():
     db.clear_tables()
 
     assert response1.status_code == 400
-    assert(response2["nicknameIsValid"] == True)
+    assert(response2["nickname_is_valid"] == True)

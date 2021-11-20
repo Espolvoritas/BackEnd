@@ -1,6 +1,5 @@
 from fastapi.testclient import TestClient
-from pony.orm import db_session, flush
-import string
+from pony.orm import db_session
 import logging
 import random
 from Misterio.testing_utils import *
@@ -10,7 +9,7 @@ import Misterio.database as db
 client = TestClient(app)
 logger = logging.getLogger("gameboard")
 
-def test_right_accusation():
+def test_send_one_roll():
     db.clear_tables()
     host = get_random_string(6)
     lobby_id = create_game_post(host, client).json()["lobby_id"]
@@ -18,62 +17,72 @@ def test_right_accusation():
     expected_players.insert(0,host)
     
     connect_and_start_game_2_players(expected_players, client)
-
+    
+    roll = random.randint(1,6)
     with db_session:
-        lobby = db.Lobby.get(lobby_id=lobby_id)
-        current_player = lobby.game.current_player
+        current_player = db.Lobby.get(lobby_id=lobby_id).game.current_player
         current_player_nickName = current_player.nickname
         next_player = current_player.next_player
-        room = lobby.game.room.card_id
-        monster = lobby.game.monster.card_id
-        victim = lobby.game.victim.card_id
 
+    print(current_player)
     with client.websocket_connect("/gameBoard/" + str(current_player.player_id)) as websocket1:
         data = websocket1.receive_json()
+        print(data)
         with client.websocket_connect("/gameBoard/" + str(next_player.player_id)) as websocket2:
-            #data = websocket1.receive_json()
             data = websocket2.receive_json()
+            print(data)
             try:
                 assert current_player_nickName == data["current_player"]
-                accuse_post(current_player.player_id,room, monster, victim, client)
-                data = websocket1.receive_json()
-                assert data["data"]["won"] == True
+                response = roll_dice_post(current_player.player_id, roll, client)
+                assert (response.status_code == 200)
+                #assert next_player == data["current_player"]
                 websocket2.close()
                 data = websocket1.receive_json()
+                print(data)
                 websocket1.close()
             except KeyboardInterrupt:
                 websocket1.close()
 
-def test_wrong_accusation():
+    with db_session:
+        player = db.Player.get(player_id=current_player.player_id)
+        curr_roll = player.current_dice_roll
+    assert curr_roll == roll
+
+def test_send_one_roll_not_in_turn():
     db.clear_tables()
     host = get_random_string(6)
     lobby_id = create_game_post(host, client).json()["lobby_id"]
     expected_players = create_players(1, lobby_id)
     expected_players.insert(0,host)
-    
-    connect_and_start_game_2_players(expected_players, client)
 
+    connect_and_start_game_2_players(expected_players, client)
+    
+    roll = random.randint(1,6)
     with db_session:
-        lobby = db.Lobby.get(lobby_id=lobby_id)
-        current_player = lobby.game.current_player
+        current_player = db.Lobby.get(lobby_id=lobby_id).game.current_player
         current_player_nickName = current_player.nickname
         next_player = current_player.next_player
-        room = lobby.game.room.card_id
-        monster = lobby.game.monster.card_id
-        victim = lobby.game.victim.card_id
 
     with client.websocket_connect("/gameBoard/" + str(current_player.player_id)) as websocket1:
         data = websocket1.receive_json()
+        print(data)
         with client.websocket_connect("/gameBoard/" + str(next_player.player_id)) as websocket2:
-            #data = websocket1.receive_json()
             data = websocket2.receive_json()
+            print(data)
             try:
                 assert current_player_nickName == data["current_player"]
-                accuse_post(current_player.player_id,room, (monster-1), victim, client)
-                data = websocket1.receive_json()
-                assert data["data"]["won"] == False
+                response = roll_dice_post(next_player.player_id, roll, client)
+                assert (response.status_code == 403)
                 websocket2.close()
                 data = websocket1.receive_json()
+                print(data)
                 websocket1.close()
             except KeyboardInterrupt:
+                websocket2.close()
                 websocket1.close()
+
+
+    with db_session:
+        player = db.Player.get(player_id=current_player.player_id)
+        #if current player is player 2
+        assert player.current_dice_roll == 0

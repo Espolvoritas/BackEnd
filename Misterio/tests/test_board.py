@@ -1,6 +1,6 @@
 from Misterio import database as database
 from pony.orm import db_session, flush, select
-from Misterio.gameboard import cellByCoordinates
+from Misterio.functions import get_cell_by_coordinates
 from Misterio.server import app
 from fastapi.testclient import TestClient 
 
@@ -12,44 +12,44 @@ def test_cell_creation():
         cells = select(c for c in database.Cell)
         
         for c in cells:
-            print(f"Cell.x: {c.x}, Cell.y: {c.y}, Cell.type: {c.cellType}")
+            print(f"Cell.x: {c.x}, Cell.y: {c.y}, Cell.type: {c.cell_type}")
             print("All neighbors: ")
-            neighbors = list(c.getNeighbors()) + list(c.getFreeNeighbors())
+            neighbors = list(c.get_neighbors()) + list(c.get_free_neighbors())
             print(neighbors)
             for d in neighbors:
-                print(d.x, d.y, d.cellType)
+                print(d.x, d.y, d.cell_type)
 
 def test_reachability():
     with db_session:
-        sampleCell = cellByCoordinates(4, 7)
-        reachable = sampleCell.getReachable(4)
+        sampleCell = get_cell_by_coordinates(4, 7)
+        reachable = sampleCell.get_reachable(4)
         for cell, distance in list(reachable):
-            print(cell.x, cell.y, cell.cellType, distance)
+            print(cell.x, cell.y, cell.cell_type, distance)
 
-        sampleCell = cellByCoordinates(12, 7)
-        reachable = sampleCell.getReachable(6)
+        sampleCell = get_cell_by_coordinates(12, 7)
+        reachable = sampleCell.get_reachable(6)
         for cell, distance in list(reachable):
-            print(cell.x, cell.y, cell.cellType, distance)
+            print(cell.x, cell.y, cell.cell_type, distance)
    
 def test_get_moves():
     with db_session:
-        p1 = database.Player(nickName="Mr. Previous")
-        p2 = database.Player(nickName="Mr. Next")
-        p3 = database.Player(nickName="Mr. Evenafter")
+        p1 = database.Player(nickname="Mr. Previous")
+        p2 = database.Player(nickname="Mr. Next")
+        p3 = database.Player(nickname="Mr. Evenafter")
 
         flush()
 
-        p1.location = cellByCoordinates(4, 7)
-        p2.location = cellByCoordinates(4, 7)
-        p3.location = cellByCoordinates(16, 7)
+        p1.location = get_cell_by_coordinates(4, 7)
+        p2.location = get_cell_by_coordinates(4, 7)
+        p3.location = get_cell_by_coordinates(16, 7)
 
         flush()
 
     response = client.post("/gameBoard/moves",
-		headers={"accept": "application/json",
-				"Content-Type" : "application/json"},
-				json={"player_id": 1, "x": 4, "y": 7, "cost": 4}
-				)
+        headers={"accept": "application/json",
+                "Content-Type" : "application/json"},
+                json={"player_id": 1, "x": 4, "y": 7, "cost": 4}
+                )
                 
     responseJson = response.json()
     print(responseJson)
