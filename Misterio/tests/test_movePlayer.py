@@ -21,7 +21,6 @@ def find_entrance(movement):
 def find_room(movement):
 	for possibility in movement:
 		cell = cellByCoordinates(possibility['x'], possibility['y'])
-		print(cell)
 		if 'room' == cell.cellType :
 			return possibility
 
@@ -36,17 +35,17 @@ def test_bad_move():
 		client.websocket_connect("/lobby/2") as websocket2:
 		try:
 			data = websocket1.receive_json()
-			for player, expected in zip(data['players'], expectedPlayers):
+			for player, expected in zip(data['data']['players'], expectedPlayers):
 				assert player['nickName'] == expected
 			data = websocket2.receive_json()
-			for player, expected in zip(data['players'], expectedPlayers):
+			for player, expected in zip(data['data']['players'], expectedPlayers):
 				assert player['nickName'] == expected
 
 			response = startGame_post(1, client)
 			assert response.status_code == 200
 			websocket2.close()
-			data = websocket1.receive_json()
-			for player, expected in zip(data['players'], expectedPlayers):
+			data = receive_until_code(websocket1, 4096)
+			for player, expected in zip(data['data']['players'], expectedPlayers):
 				assert player['nickName'] == expected
 			websocket1.close()
 		except KeyboardInterrupt:
@@ -71,9 +70,9 @@ def test_bad_move():
 				response = move_post(current_player.player_id, 999, 999, 0,client)
 				assert response.status_code == 400
 				websocket2.close()
-				data = websocket1.receive_json()
 				websocket1.close()
 			except KeyboardInterrupt:
+				websocket2.close()
 				websocket1.close()
 
 def test_move():
@@ -87,17 +86,17 @@ def test_move():
 		client.websocket_connect("/lobby/2") as websocket2:
 		try:
 			data = websocket1.receive_json()
-			for player, expected in zip(data['players'], expectedPlayers):
+			for player, expected in zip(data['data']['players'], expectedPlayers):
 				assert player['nickName'] == expected
 			data = websocket2.receive_json()
-			for player, expected in zip(data['players'], expectedPlayers):
+			for player, expected in zip(data['data']['players'], expectedPlayers):
 				assert player['nickName'] == expected
 
 			response = startGame_post(1, client)
 			assert response.status_code == 200
 			websocket2.close()
-			data = websocket1.receive_json()
-			for player, expected in zip(data['players'], expectedPlayers):
+			data = receive_until_code(websocket1, 4096)
+			for player, expected in zip(data['data']['players'], expectedPlayers):
 				assert player['nickName'] == expected
 			websocket1.close()
 		except KeyboardInterrupt:
@@ -119,18 +118,11 @@ def test_move():
 				assert current_player_nickName == data['currentPlayer']
 				response = rollDice_post(current_player.player_id, roll, client)
 				assert (response.status_code == 200)
-				print("RESPONSE: ",response.json())
 				possible_moves = response.json()['moves']
 				movement = random.choice(possible_moves)
 				response = move_post(current_player.player_id, movement['x'], movement['y'], movement['remaining'],client)
 				assert response.status_code == 200
-				print(response)
-				data = websocket1.receive_json()
-				print(data)
-				data = websocket2.receive_json()
-				print("Move broadcast", data)
 				websocket2.close()
-				data = websocket1.receive_json()
 				websocket1.close()
 			except KeyboardInterrupt:
 				websocket2.close()

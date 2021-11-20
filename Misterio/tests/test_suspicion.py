@@ -12,7 +12,8 @@ import Misterio.database as db
 
 client = TestClient(app)
 
-#TODO 
+#TODO
+# actually validate received data 
 #test if suspicion is completely in envelope
 #test if suspicion doesnt require picking
 
@@ -27,27 +28,22 @@ def test_makeSuspicion_2players():
 		client.websocket_connect("/lobby/2") as websocket2:
 		try:
 			data1 = websocket1.receive_json()
-			for player, expected in zip(data1['players'], expectedPlayers):
+			for player, expected in zip(data1['data']['players'], expectedPlayers):
 				assert (player['nickName'] == expected)
-			print("Data1", data1)
 			data2 = websocket2.receive_json()
-			for player, expected in zip(data2['players'], expectedPlayers):
+			for player, expected in zip(data2['data']['players'], expectedPlayers):
 				assert (player['nickName'] == expected)
-			print("data2", data2)
 			response = startGame_post(1, client)
 			assert (response.status_code == 200)
 
 			data3 = websocket1.receive_json()
-			print("data3", data3)
 
 			data1 = websocket1.receive_json()
 			data2 = websocket2.receive_json()
-			print(data1)
-			print(data2)
 			
 			websocket2.close()
 			data = websocket1.receive_json()
-			for player, expected in zip(data['players'], expectedPlayers):
+			for player, expected in zip(data['data']['players'], expectedPlayers):
 				assert (player['nickName'] == expected)
 			websocket1.close()
 		except KeyboardInterrupt:
@@ -67,47 +63,22 @@ def test_makeSuspicion_2players():
 		cards2 = list(player2.cards)
 		culprit = select(c for c in db.Card if c in player2.cards and c.cardType == 'Monster').first()
 		victim = select(c for c in db.Card if c in player2.cards and c.cardType == 'Victim').first()
-		print(culprit.cardName)
-		print(victim.cardName)
 		culprit = culprit.cardId
 		victim = victim.cardId
 	with client.websocket_connect("/gameBoard/" + str(player1.player_id)) as websocket1:
 		currplayer = websocket1.receive_json()
-		print(currplayer)
 		with client.websocket_connect("/gameBoard/" + str(player2.player_id)) as websocket2:
 			currplayer = websocket2.receive_json()#connection broadcast
-			print(currplayer)
 			try:
-				print("Player 1 Cards: ", cards1)
-				print("Player 2 Cards: ", cards2)
 				
 				websocket2.send_json({'code': 'PICK_CARD', 'card': victim})
-				print("AAaa")
 				response = suspicion_post(player1.player_id, victim, culprit, client)
 				
 				data2 = websocket2.receive_json()
-				
-				print(data2)
-
-				data2 = websocket2.receive_json()
-				print(data2)
-				
 				data1 = websocket1.receive_json()
-				data2 = websocket2.receive_json()
-				print(data1)
-				print(data2)
-
-				data1 = websocket1.receive_json()
-				data2 = websocket2.receive_json()
-				print(data1)
-				print(data2)
-
 				assert (response.status_code == 200)
-				print(response)	
 
 				websocket2.close()
-				data1 = websocket1.receive_json()
-				print(data1)
 				websocket1.close()
 			except KeyboardInterrupt:
 				websocket2.close()
@@ -126,28 +97,22 @@ def test_makeSuspicion_3players():
 		client.websocket_connect("/lobby/3") as websocket3:
 		try:
 			data = websocket1.receive_json()
-			for player, expected in zip(data['players'], expectedPlayers):
+			for player, expected in zip(data['data']['players'], expectedPlayers):
 				assert (player['nickName'] == expected)
 			data = websocket2.receive_json()
-			for player, expected in zip(data['players'], expectedPlayers):
+			for player, expected in zip(data['data']['players'], expectedPlayers):
 				assert (player['nickName'] == expected)
 			data = websocket3.receive_json()
-			for player, expected in zip(data['players'], expectedPlayers):
+			for player, expected in zip(data['data']['players'], expectedPlayers):
 				assert (player['nickName'] == expected)
 
 			response = startGame_post(1, client)
 			assert (response.status_code == 200)
 			websocket3.close()
-			data = websocket1.receive_json()
-			data2 = websocket2.receive_json()
-			for player, expected in zip(data['players'], expectedPlayers):
-				assert (player['nickName'] == expected)
-			for player, expected in zip(data2['players'], expectedPlayers):
+			data = receive_until_code(websocket1, 4096)
+			for player, expected in zip(data['data']['players'], expectedPlayers):
 				assert (player['nickName'] == expected)
 			websocket2.close()
-			data = websocket1.receive_json()
-			for player, expected in zip(data['players'], expectedPlayers):
-				assert (player['nickName'] == expected)
 			websocket1.close()
 		except KeyboardInterrupt:
 			websocket3.close()
@@ -178,44 +143,19 @@ def test_makeSuspicion_3players():
 			with client.websocket_connect("/gameBoard/" + str(player3.player_id)) as websocket3:
 				try:
 					currplayer = websocket3.receive_json()#connection broadcast
-
-					print("Player 1 Cards: ", cards1)
-					print("Player 2 Cards: ", cards2)
-					print("Player 3 Cards: ", cards3)
-					print("Suspicion: ", victim, culprit, roomCard.cardId )
+					print(currplayer)
 
 					websocket3.send_json({'code': 'PICK_CARD', 'card': victim})
 					response = suspicion_post(player1.player_id, victim, culprit, client)
 					data1 = websocket1.receive_json()
-					data2 = websocket2.receive_json()
-					data3 = websocket3.receive_json()
 					print(data1)
-					print(data2)
-					print(data3)
-					data3 = websocket3.receive_json()
-					print(data3)
-					data1 = websocket1.receive_json()
 					data2 = websocket2.receive_json()
-					data3 = websocket3.receive_json()
-					print(data1)
 					print(data2)
-					print(data3)
-					data1 = websocket1.receive_json()
-					data2 = websocket2.receive_json()
 					data3 = websocket3.receive_json()
-					print(data1)
-					print(data2)
 					print(data3)
 					assert (response.status_code == 200)
-					print(response)	
 					websocket3.close()
-					data1 = websocket1.receive_json()
-					data2 = websocket2.receive_json()
-					print(data1)
-					print(data2)
 					websocket2.close()
-					data1 = websocket1.receive_json()
-					print(data1)
 					websocket1.close()
 				except KeyboardInterrupt:
 					websocket2.close()

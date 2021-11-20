@@ -18,7 +18,7 @@ def test_no_lobby():
 	with client.websocket_connect("/lobby/1") as websocket1:
 		try:
 			data = websocket1.receive_json()
-			for player in data['players']:
+			for player in data['data']['players']:
 				assert player['nickName'] == host
 				with pytest.raises(WebSocketDisconnect, match='1008'):
 					with client.websocket_connect("/lobby/2"):
@@ -33,7 +33,7 @@ def test_invalid_player():
 	with client.websocket_connect("/lobby/1") as websocket1:
 		try:
 			data = websocket1.receive_json()
-			for player in data['players']:
+			for player in data['data']['players']:
 				assert player['nickName'] == host
 			with pytest.raises(WebSocketDisconnect, match='1008'):
 				with client.websocket_connect("/lobby/2"):
@@ -51,10 +51,10 @@ def test_two_lobbys():
 		client.websocket_connect("/lobby/2") as websocket2:
 		try:
 			data = websocket1.receive_json()
-			for player in data['players']:
+			for player in data['data']['players']:
 				assert player['nickName'] == host1
 			data = websocket2.receive_json()
-			for player in data['players']:
+			for player in data['data']['players']:
 				assert player['nickName'] == host2
 			websocket2.close()
 			websocket1.close()
@@ -69,7 +69,7 @@ def test_duplicate():
 	with client.websocket_connect("/lobby/1") as websocket1:
 		try:
 			data = websocket1.receive_json()
-			for player in data['players']:
+			for player in data['data']['players']:
 				assert player['nickName'] == host
 			with pytest.raises(WebSocketDisconnect, match='1008'):
 				with client.websocket_connect("/lobby/1") as websocket2:
@@ -89,11 +89,11 @@ def test_leave_host():
 		with client.websocket_connect("/lobby/2") as websocket2:
 			try:
 				data = websocket1.receive_json()
-				for player, expected in zip(data['players'], expectedPlayers):
+				for player, expected in zip(data['data']['players'], expectedPlayers):
 					assert player['nickName'] == expected
 				data = websocket2.receive_json()
 
-				for player, expected in zip(data['players'], expectedPlayers):
+				for player, expected in zip(data['data']['players'], expectedPlayers):
 					assert player['nickName'] == expected
 				websocket1.close()
 				data = websocket2.receive_json()
@@ -112,15 +112,14 @@ def test_get_two_players():
 		client.websocket_connect("/lobby/2") as websocket2:
 		try:
 			data = websocket1.receive_json()
-			for player, expected in zip(data['players'], expectedPlayers):
+			for player, expected in zip(data['data']['players'], expectedPlayers):
 				assert player['nickName'] == expected
 			data = websocket2.receive_json()
-			for player, expected in zip(data['players'], expectedPlayers):
-				print(player)
+			for player, expected in zip(data['data']['players'], expectedPlayers):
 				assert player['nickName'] == expected
 			websocket2.close()
 			data = websocket1.receive_json()
-			for player, expected in zip(data['players'], expectedPlayers):
+			for player, expected in zip(data['data']['players'], expectedPlayers):
 				assert player['nickName'] == expected
 			websocket1.close()
 		except KeyboardInterrupt:

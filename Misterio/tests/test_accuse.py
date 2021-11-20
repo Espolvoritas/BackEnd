@@ -21,17 +21,17 @@ def test_right_accusation():
 		client.websocket_connect("/lobby/2") as websocket2:
 		try:
 			data = websocket1.receive_json()
-			for player, expected in zip(data['players'], expectedPlayers):
+			for player, expected in zip(data['data']['players'], expectedPlayers):
 				assert player['nickName'] == expected
 			data = websocket2.receive_json()
-			for player, expected in zip(data['players'], expectedPlayers):
+			for player, expected in zip(data['data']['players'], expectedPlayers):
 				assert player['nickName'] == expected
 
 			response = startGame_post(1, client)
 			assert response.status_code == 200
 			websocket2.close()
-			data = websocket1.receive_json()
-			for player, expected in zip(data['players'], expectedPlayers):
+			data = receive_until_code(websocket1, 4096)
+			for player, expected in zip(data['data']['players'], expectedPlayers):
 				assert player['nickName'] == expected
 			websocket1.close()
 		except KeyboardInterrupt:
@@ -58,7 +58,6 @@ def test_right_accusation():
 				data = websocket1.receive_json()
 				assert data['data']['won'] == True
 				websocket2.close()
-				data = websocket1.receive_json()
 				websocket1.close()
 			except KeyboardInterrupt:
 				websocket1.close()
@@ -74,17 +73,17 @@ def test_wrong_accusation():
 		client.websocket_connect("/lobby/2") as websocket2:
 		try:
 			data = websocket1.receive_json()
-			for player, expected in zip(data['players'], expectedPlayers):
+			for player, expected in zip(data['data']['players'], expectedPlayers):
 				assert player['nickName'] == expected
 			data = websocket2.receive_json()
-			for player, expected in zip(data['players'], expectedPlayers):
+			for player, expected in zip(data['data']['players'], expectedPlayers):
 				assert player['nickName'] == expected
 
 			response = startGame_post(1, client)
 			assert response.status_code == 200
 			websocket2.close()
-			data = websocket1.receive_json()
-			for player, expected in zip(data['players'], expectedPlayers):
+			data = receive_until_code(websocket1, 4096)
+			for player, expected in zip(data['data']['players'], expectedPlayers):
 				assert player['nickName'] == expected
 			websocket1.close()
 		except KeyboardInterrupt:
@@ -111,7 +110,6 @@ def test_wrong_accusation():
 				data = websocket1.receive_json()
 				assert data['data']['won'] == False
 				websocket2.close()
-				data = websocket1.receive_json()
 				websocket1.close()
 			except KeyboardInterrupt:
 				websocket1.close()

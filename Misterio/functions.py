@@ -2,6 +2,7 @@ import string
 import random
 from pony.orm import db_session
 from fastapi.testclient import TestClient
+from starlette.testclient import WebSocketTestSession
 from pony.orm import get as dbget
 
 import Misterio.database as db
@@ -20,6 +21,18 @@ def add_player(player: db.Player, game_id: str):
     with db_session:  
 	    game = db.Game.get(game_id=game_id)
 	    game.addPlayer(player)
+
+def receive_until_code(websocket: WebSocketTestSession, code:int):
+	data = {"code": 0}
+	while data["code"] != code:
+		previousCode = data["code"]
+		msg = websocket.receive_json()
+		data.update(msg)
+		print(str(previousCode) + " " + str(code))
+		print(data)
+		if not (previousCode & msg["code"]):
+			data["code"] = previousCode | msg["code"]
+	return data
 
 def create_players(quantity: int, game_id: int):
 	player_list = []

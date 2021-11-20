@@ -21,17 +21,17 @@ def test_send_one_roll():
 		client.websocket_connect("/lobby/2") as websocket2:
 		try:
 			data = websocket1.receive_json()
-			for player, expected in zip(data['players'], expectedPlayers):
+			for player, expected in zip(data['data']['players'], expectedPlayers):
 				assert player['nickName'] == expected
 			data = websocket2.receive_json()
-			for player, expected in zip(data['players'], expectedPlayers):
+			for player, expected in zip(data['data']['players'], expectedPlayers):
 				assert player['nickName'] == expected
 
 			response = startGame_post(1, client)
 			assert response.status_code == 200
 			websocket2.close()
-			data = websocket1.receive_json()
-			for player, expected in zip(data['players'], expectedPlayers):
+			data = receive_until_code(websocket1, 4096)
+			for player, expected in zip(data['data']['players'], expectedPlayers):
 				assert player['nickName'] == expected
 			websocket1.close()
 		except KeyboardInterrupt:
@@ -44,24 +44,17 @@ def test_send_one_roll():
 		current_player_nickName = current_player.nickName
 		next_player = current_player.nextPlayer
 
-	print(current_player)
 	with client.websocket_connect("/gameBoard/" + str(current_player.player_id)) as websocket1:
 		data = websocket1.receive_json()
-		print(data)
 		with client.websocket_connect("/gameBoard/" + str(next_player.player_id)) as websocket2:
 			#data = websocket1.receive_json()
-			#print(data)
 			data = websocket2.receive_json()
-			print(data)
 			try:
 				assert current_player_nickName == data['currentPlayer']
 				response = rollDice_post(current_player.player_id, roll, client)
 				assert (response.status_code == 200)
-				print(response)
 				#assert next_player == data['currentPlayer']
 				websocket2.close()
-				data = websocket1.receive_json()
-				print(data)
 				websocket1.close()
 			except KeyboardInterrupt:
 				websocket1.close()
@@ -80,17 +73,17 @@ def test_send_one_roll_not_in_turn():
 		client.websocket_connect("/lobby/2") as websocket2:
 		try:
 			data = websocket1.receive_json()
-			for player, expected in zip(data['players'], expectedPlayers):
+			for player, expected in zip(data['data']['players'], expectedPlayers):
 				assert player['nickName'] == expected
 			data = websocket2.receive_json()
-			for player, expected in zip(data['players'], expectedPlayers):
+			for player, expected in zip(data['data']['players'], expectedPlayers):
 				assert player['nickName'] == expected
 
 			response = startGame_post(1, client)
 			assert response.status_code == 200
 			websocket2.close()
-			data = websocket1.receive_json()
-			for player, expected in zip(data['players'], expectedPlayers):
+			data = receive_until_code(websocket1, 4096)
+			for player, expected in zip(data['data']['players'], expectedPlayers):
 				assert player['nickName'] == expected
 			websocket1.close()
 		except KeyboardInterrupt:

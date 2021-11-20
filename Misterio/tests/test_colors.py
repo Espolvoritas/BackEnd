@@ -31,23 +31,23 @@ def test_joinColors():
 			assert color2 is not None
 			
 			data = websocket1.receive_json()
-			for player, expected in zip(data['players'], expectedPlayers):
+			for player, expected in zip(data['data']['players'], expectedPlayers):
 				assert player['nickName'] == expected
-				assert player['Color'] not in data['colors']
+				assert player['Color'] not in data['data']['colors']
 
 			data2 = websocket2.receive_json()
-			for player, expected in zip(data2['players'], expectedPlayers):
+			for player, expected in zip(data2['data']['players'], expectedPlayers):
 				assert player['nickName'] == expected
-				assert player['Color'] not in data2['colors']
+				assert player['Color'] not in data2['data']['colors']
 
 			
 			websocket2.close()
-			assert color2.color_id not in data['colors']
+			assert color2.color_id not in data['data']['colors']
 
 			data = websocket1.receive_json()
-			for player, expected in zip(data['players'], expectedPlayers):
+			for player, expected in zip(data['data']['players'], expectedPlayers):
 				assert player['nickName'] == expected
-				assert player['Color'] not in data['colors']
+				assert player['Color'] not in data['data']['colors']
 			websocket1.close()
 		except KeyboardInterrupt:
 			websocket2.close()
@@ -70,54 +70,54 @@ def test_change_color():
 				color1, color2 = player1.color.color_id, player2.color.color_id
 				expected_colors = [color1, color2]
 		data = websocket1.receive_json()
-		assert color1 not in data['colors']
-		assert color2 in data['colors']
+		assert color1 not in data['data']['colors']
+		assert color2 in data['data']['colors']
 		with client.websocket_connect("/lobby/2") as websocket2:
 			try:
 				data1 = websocket1.receive_json()
-				assert color1 not in data1['colors']
-				assert color2 not in data1['colors']
+				assert color1 not in data1['data']['colors']
+				assert color2 not in data1['data']['colors']
 
-				for player, expected, colors in zip(data['players'], expectedPlayers, expected_colors):
+				for player, expected, colors in zip(data['data']['players'], expectedPlayers, expected_colors):
 					assert player['nickName'] == expected
 					assert player['Color'] == colors
 
 				data2 = websocket2.receive_json()
-				assert color1 not in data2['colors']
-				assert color2 not in data2['colors']
+				assert color1 not in data2['data']['colors']
+				assert color2 not in data2['data']['colors']
 				assert data1 == data2
 
-				for player, expected, colors in zip(data2['players'], expectedPlayers, expected_colors):
+				for player, expected, colors in zip(data2['data']['players'], expectedPlayers, expected_colors):
 					assert player['nickName'] == expected
 					assert player['Color'] == colors
 
-				new_color1 = int(random.choice(data1['colors']))
+				new_color1 = int(random.choice(data1['data']['colors']))
 				response = pickColor_put(player1id, new_color1, client)
 				assert response.status_code == 200
 
 				data = websocket1.receive_json()
-				assert color1 in data['colors']
-				assert new_color1 not in data['colors']
+				assert color1 in data['data']['colors']
+				assert new_color1 not in data['data']['colors']
 
 				data2 = websocket2.receive_json()
-				assert new_color1 not in data2['colors']
-				assert color1 in data2['colors']
+				assert new_color1 not in data2['data']['colors']
+				assert color1 in data2['data']['colors']
 
-				new_color2 = int(random.choice(data2['colors']))
+				new_color2 = int(random.choice(data2['data']['colors']))
 				response = pickColor_put(player2id, new_color2, client)
 				assert response.status_code == 200
 
 				data = websocket1.receive_json()
-				assert color2 in data['colors']
-				assert new_color2 not in data['colors']
+				assert color2 in data['data']['colors']
+				assert new_color2 not in data['data']['colors']
 
 				data2 = websocket2.receive_json()
-				assert new_color2 not in data2['colors']
-				assert color2 in data2['colors']
+				assert new_color2 not in data2['data']['colors']
+				assert color2 in data2['data']['colors']
 
 				websocket2.close()
 				data = websocket1.receive_json()
-				assert new_color2 in data['colors']
+				assert new_color2 in data['data']['colors']
 
 				websocket1.close()
 			except KeyboardInterrupt:
@@ -140,25 +140,25 @@ def test_taken_color():
 				color1, color2 = player1.color.color_id, player2.color.color_id
 				expected_colors = [color1, color2]
 		data = websocket1.receive_json()
-		assert (color1 not in data['colors'])
-		assert (color2 in data['colors'])
+		assert (color1 not in data['data']['colors'])
+		assert (color2 in data['data']['colors'])
 		with client.websocket_connect("/lobby/2") as websocket2:
 			
 			try:
 				data1 = websocket1.receive_json()
-				assert (color1 not in data1['colors'])
-				assert (color2 not in data1['colors'])
+				assert (color1 not in data1['data']['colors'])
+				assert (color2 not in data1['data']['colors'])
 
-				for player, expected, colors in zip(data['players'], expectedPlayers, expected_colors):
+				for player, expected, colors in zip(data['data']['players'], expectedPlayers, expected_colors):
 					assert (player['nickName'] == expected)
 					assert (player['Color'] == colors)
 
 				data2 = websocket2.receive_json()
-				assert (color1 not in data2['colors'])
-				assert (color2 not in data2['colors'])
+				assert (color1 not in data2['data']['colors'])
+				assert (color2 not in data2['data']['colors'])
 				assert (data1 == data2)
 
-				for player, expected, colors in zip(data2['players'], expectedPlayers, expected_colors):
+				for player, expected, colors in zip(data2['data']['players'], expectedPlayers, expected_colors):
 					assert (player['nickName'] == expected)
 					assert (player['Color'] == colors)
 
@@ -168,7 +168,7 @@ def test_taken_color():
 
 				websocket2.close()
 				data = websocket1.receive_json()
-				assert (color2 in data['colors'])
+				assert (color2 in data['data']['colors'])
 
 				websocket1.close()
 			except KeyboardInterrupt:
