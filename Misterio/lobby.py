@@ -118,10 +118,13 @@ async def handle_lobby(websocket: WebSocket, player_id: int):
         await manager.connect(websocket, player_id)
         await manager.lobby_broadcast(await manager.get_players(lobby.lobby_id), lobby.lobby_id)
         while True:
-            try:
-                await asyncio.wait_for(await websocket.receive_text(), 0.0001)
-            except asyncio.TimeoutError:
-                pass
+            message = await websocket.receive_json()
+            if message['code'] & 8192:
+                broadcast = {
+                    "code": 8192,
+                    "msg":{"user": player_name, "color": player_color,"str": message["msg"]}
+                }
+                await manager.lobby_broadcast(broadcast)
     except WebSocketDisconnect:
         if isHost:
             await manager.disconnect_everyone(websocket, lobby.lobby_id)
