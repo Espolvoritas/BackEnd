@@ -1,15 +1,21 @@
 from fastapi import APIRouter, HTTPException, status, WebSocket, WebSocketDisconnect ,Body
 from pony.orm import db_session, flush, select
 from typing import List, TypedDict
+from starlette.requests import cookie_parser
 from starlette.responses import Response
 import logging
 import asyncio
 
 import Misterio.database as db
 
+MSG_PERIOD=0.2
+
 game = APIRouter(prefix="/lobby")
 logger = logging.getLogger("lobby")
 
+class msgBuffer(TypedDict):
+	userID: int
+	buffer: List[dict]
 class userConnections(TypedDict):
 	websocket: WebSocket
 	userID: int
@@ -20,6 +26,7 @@ class lobbyConnections(TypedDict):
 
 class ConnectionManager:
 	def __init__(self):
+		self.buffer: msgBuffer = {}
 		self.active_connections: userConnections = {}
 		self.active_lobbys: lobbyConnections = {}
 
@@ -35,6 +42,7 @@ class ConnectionManager:
 	async def connect(self, websocket: WebSocket, userID):
 		await websocket.accept()
 		self.active_connections[websocket] = userID
+		self.buffer[userID] = {"code": 0}
 		with db_session:
 			lobby = db.Player.get(player_id=userID).lobby
 			if lobby.game_id not in self.active_lobbys:
@@ -51,6 +59,7 @@ class ConnectionManager:
 		if websocket in self.active_connections.keys():
 			userID = self.active_connections[websocket]
 			del self.active_connections[websocket]
+			del self.buffer[userID]
 			self.active_lobbys[lobbyID].remove(websocket)
 			with db_session(optimistic=False):
 				game = db.Game.get(game_id=lobbyID)
@@ -77,24 +86,39 @@ class ConnectionManager:
 				if self.active_connections[connection] == playerId:
 					return connection
 
-	async def send_personal_message(self, message: List[str], websocket: WebSocket):
-		await websocket.send_json(message)
+	async def empty_buffer(self, websocket):
+		while True:
+			userID = self.active_connections[websocket]
+			if self.buffer[userID]["code"] != 0:
+				await websocket.send_json(self.buffer[userID])
+				self.buffer[userID] = {"code": 0}
+			await asyncio.sleep(MSG_PERIOD)
+
+	async def send_personal_message(self, message: List[dict], websocket: WebSocket, priority=False):
+		if not priority:
+			userID = self.active_connections[websocket]
+			previosCode = self.buffer[userID]["code"]
+			self.buffer[userID].update(message)
+			if not (previosCode & message["code"]):
+				self.buffer[userID]["code"] = previosCode + message["code"]
+		else:
+			await websocket.send_json(message)
 
 
-	async def broadcast(self, message: List[str]):
+	async def broadcast(self, message: List[str], priority=False):
 		for connection in self.active_connections.keys():
-			await connection.send_json(message)
+			await self.send_personal_message(message, connection, priority)
 
-	async def lobby_broadcast(self, message: List[str], lobbyID: int):
+	async def lobby_broadcast(self, message: List[str], lobbyID: int, priority=False):
 		if lobbyID in self.active_lobbys.keys():
 			for connection in self.active_lobbys[lobbyID]:
-				await connection.send_json(message)
+				await self.send_personal_message(message, connection, priority)
 
-	async def almost_lobby_broadcast(self, message: List[str], websocket: WebSocket,lobbyID: int):
+	async def almost_lobby_broadcast(self, message: List[str], websocket: WebSocket,lobbyID: int, priority=False):
 		if lobbyID in self.active_lobbys.keys():
 			for connection in self.active_lobbys[lobbyID]:
 				if websocket != connection:
-					await connection.send_json(message)
+					await self.send_personal_message(message, connection, priority)
 
 	async def getPlayers(self, lobbyID: int):
 		player_list = []
@@ -167,9 +191,11 @@ async def handleLobby(websocket: WebSocket, userID: int):
 				return
 			lobby = player.lobby
 			isHost = player.hostOf == lobby
+	task = None
 	try:
+		task = asyncio.create_task(manager.empty_buffer(websocket))
 		await manager.connect(websocket, userID)
-		await manager.lobby_broadcast(await manager.getPlayers(lobby.game_id), lobby.game_id)
+		await manager.lobby_broadcast({"code" : 4096, "data" :await manager.getPlayers(lobby.game_id)}, lobby.game_id)
 		while True:
 			try:
 				await asyncio.wait_for(await websocket.receive_text(), 0.0001)
@@ -182,7 +208,8 @@ async def handleLobby(websocket: WebSocket, userID: int):
 		else:
 			manager.disconnect(websocket, lobby.game_id)
 			await asyncio.sleep(0.1)
-			await manager.lobby_broadcast(await manager.getPlayers(lobby.game_id), lobby.game_id)
+			await manager.lobby_broadcast({"code" : 4096, "data" :await manager.getPlayers(lobby.game_id)}, lobby.game_id)
+		task.cancel()
 
 @game.post("/startGame", status_code=status.HTTP_200_OK)
 async def startGame(userID: int = Body(...)):
@@ -200,7 +227,7 @@ async def startGame(userID: int = Body(...)):
 			lobby.sortPlayers()
 			lobby.shuffleDeck()
 			lobby.setStartingPositions()
-			await manager.lobby_broadcast("STATUS_GAME_STARTED", lobby.game_id)
+			await manager.lobby_broadcast({"code": 8192}, lobby.game_id, True)
 	return {}
 
 @game.post("/joinCheck", status_code=status.HTTP_200_OK)
@@ -244,4 +271,4 @@ async def pickColor(player_id: int = Body(...), color: int = Body(...)):
 		else:
 			player.setColor(chosen_color)
 			flush()
-			await manager.lobby_broadcast(await manager.getPlayers(lobby.game_id), lobby.game_id)
+			await manager.lobby_broadcast({"code" : 4096, "data" :await manager.getPlayers(lobby.game_id)}, lobby.game_id)
