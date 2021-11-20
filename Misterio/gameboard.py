@@ -24,6 +24,7 @@ async def get_moves(player_id: int = Body(...), x: int = Body(...), y: int = Bod
     moves = []
     with db_session:
         player = get_player_by_id(player_id)
+        clear_player_status(player)
         new_position = get_cell_by_coordinates(x, y)
         if not new_position or player != player.lobby.game.current_player:
             raise HTTPException(status.HTTP_400_BAD_REQUEST)
@@ -35,6 +36,7 @@ async def get_moves(player_id: int = Body(...), x: int = Body(...), y: int = Bod
             player.set_roll(remaining)
             moves=get_reachable(player_id)
         if room == 0 and remaining == 0 and "ENTRANCE-" not in new_position.cell_type:
+            set_player_status(player, new_position)
             await game_manager.update_turn(player.lobby.lobby_id)
     position_broadcast = {
         "code": WS_POS_LIST,

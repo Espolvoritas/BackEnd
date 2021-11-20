@@ -37,10 +37,10 @@ def make_board():
                      (13, 16, "ENTRANCE-LAB"), (10, 6, "ENTRANCE-ROOM"),
                      (10, 13, "ENTRANCE-HALL"), (6, 15, "ENTRANCE-CELLAR")]
 
-    portals = [(6, 4, "VAMPIRE"), (13, 3, "SCORPION"),
-               (6, 14, "VAMPIRE"), (13, 14, "SCORPION"),
-               (14, 6, "COBRA"), (4, 13, "TARANTULA"),
-               (3, 6, "COBRA"), (15, 13, "TARANTULA")]
+    portals = [(6, 4, "PORTAL-VAMPIRE"), (13, 3, "PORTAL-SCORPION"),
+               (6, 14, "PORTAL-VAMPIRE"), (13, 14, "PORTAL-SCORPION"),
+               (14, 6, "PORTAL-COBRA"), (4, 13, "PORTAL-TARANTULA"),
+               (3, 6, "PORTAL-COBRA"), (15, 13, "PORTAL-TARANTULA")]
 
     traps = [(6, 6, "TRAP"), (6, 13, "TRAP"),
              (13, 6, "TRAP"), (13, 13, "TRAP")]
