@@ -6,7 +6,7 @@ import asyncio
 
 import Misterio.database as db
 import Misterio.manager as mng
-from Misterio.functions import get_lobby_by_id, get_player_by_id
+from Misterio.functions import *
 
 lobby = APIRouter(prefix="/lobby")
 logger = logging.getLogger("lobby")
@@ -110,6 +110,8 @@ async def handle_lobby(websocket: WebSocket, player_id: int):
         if player is None or player.lobby is None or manager.exists(player_id):
             await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
             return
+        player_name = get_player_nickname(player_id)
+        player_color = get_player_color(player_id)
         lobby = player.lobby
         isHost = player.host_of == lobby
     try:

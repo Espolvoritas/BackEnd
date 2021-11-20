@@ -170,6 +170,8 @@ async def handle_turn(websocket: WebSocket, player_id: int):
             await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
             return
         lobby = player.lobby
+        player_name = get_player_nickname(player_id)
+        player_color = get_player_color(player_id)
         await game_manager.connect(websocket, player_id)
         message = {
             "code": WS_CURR_PLAYER + WS_CARD_LIST +    WS_POS_LIST,

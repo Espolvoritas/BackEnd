@@ -64,6 +64,16 @@ def get_current_turn(lobby_id: int):
     return lobby.game.current_player.nickname
 
 @db_session
+def get_player_nickname(player_id: int):
+    player = get_player_by_id(player_id)
+    return player.nickName
+
+@db_session
+def get_player_color(player_id: int):
+    player = get_player_by_id(player_id)
+    return player.color_id
+
+@db_session
 def player_in_turn(player_id: int):
     player = get_player_by_id(player_id)
     lobby = player.lobby
