@@ -10,7 +10,7 @@ client = TestClient(app)
 def test_join_colors():
     db.clear_tables()
     host = get_random_string(6)
-    lobby_id = create_game_post(host, client).json()["lobby_id"]
+    lobby_id = create_game_post(host, "", client).json()["lobby_id"]
     expected_players = create_players(1,lobby_id)
     expected_players.insert(0,host)
 
@@ -53,7 +53,7 @@ def test_join_colors():
 def test_change_color():
     db.clear_tables()
     host = get_random_string(6)
-    lobby_id = create_game_post(host, client).json()["lobby_id"]
+    lobby_id = create_game_post(host, "", client).json()["lobby_id"]
     
     with client.websocket_connect("/lobby/1") as websocket1:
         expected_players = create_players(1,lobby_id)
@@ -123,7 +123,7 @@ def test_change_color():
 def test_taken_color():
     db.clear_tables()
     host = get_random_string(6)
-    lobby_id = create_game_post(host, client).json()["lobby_id"]
+    lobby_id = create_game_post(host, "", client).json()["lobby_id"]
     
     with client.websocket_connect("/lobby/1") as websocket1:
         expected_players = create_players(1,lobby_id)

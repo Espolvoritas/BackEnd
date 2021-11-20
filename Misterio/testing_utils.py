@@ -26,11 +26,11 @@ def create_players(quantity: int, lobby_id: int):
             player_list.append(new_player.nickname)
         return player_list
 
-def create_game_post(nickname: str, client: TestClient):
+def create_game_post(nickname: str, password: str, client: TestClient):
     return client.post("/lobby/createNew",
         headers={"accept": "application/json",
                 "Content-Type" : "application/json"},
-                json={"name": get_random_string(6), "host": nickname}
+                json={"name": get_random_string(6), "host": nickname, "password": password}
                 )
 
 def start_game_post(player_id: int, client: TestClient):

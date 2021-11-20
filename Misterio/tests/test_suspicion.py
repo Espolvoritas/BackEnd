@@ -10,7 +10,7 @@ client = TestClient(app)
 def test_automatic_response():
     db.clear_tables()
     host = get_random_string(6)
-    lobby_id = create_game_post(host, client).json()["lobby_id"]
+    lobby_id = create_game_post(host, "", client).json()["lobby_id"]
     expected_players = create_players(1, lobby_id)
     expected_players.insert(0,host)
 
@@ -162,7 +162,7 @@ def test_automatic_response():
 def test_makeSuspicion_2players():
     db.clear_tables()
     host = get_random_string(6)
-    lobby_id = create_game_post(host, client).json()["lobby_id"]
+    lobby_id = create_game_post(host, "", client).json()["lobby_id"]
     expected_players = create_players(1, lobby_id)
     expected_players.insert(0,host)
     
@@ -222,7 +222,7 @@ def test_makeSuspicion_2players():
 def test_makeSuspicion_3players():
     db.clear_tables()
     host = get_random_string(6)
-    lobby_id = create_game_post(host, client).json()["lobby_id"]
+    lobby_id = create_game_post(host, "", client).json()["lobby_id"]
     
     with db_session:
         lobby = get_lobby_by_id(lobby_id)
@@ -321,7 +321,7 @@ def test_makeSuspicion_3players():
 def test_invalid_suspicion():
     db.clear_tables()
     host = get_random_string(6)
-    lobby_id = create_game_post(host, client).json()["lobby_id"]
+    lobby_id = create_game_post(host, "", client).json()["lobby_id"]
     expected_players = create_players(1, lobby_id)
     expected_players.insert(0,host)
     
@@ -376,7 +376,7 @@ def test_invalid_suspicion():
 def test_invalid_room():
     db.clear_tables()
     host = get_random_string(6)
-    lobby_id = create_game_post(host, client).json()["lobby_id"]
+    lobby_id = create_game_post(host, "", client).json()["lobby_id"]
     expected_players = create_players(1, lobby_id)
     expected_players.insert(0,host)
     

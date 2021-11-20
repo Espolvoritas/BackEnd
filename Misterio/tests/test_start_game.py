@@ -11,7 +11,7 @@ client = TestClient(app)
 def test_start_game_one_player():
     db.clear_tables()
     host = get_random_string(6)
-    response = create_game_post(host, client)
+    response = create_game_post(host, "", client)
     with db_session:
         host = db.Player.get(nickname=host)
     assert response.status_code == 201
@@ -23,7 +23,7 @@ def test_start_game_one_player():
 def test_start_game_two_players():
     db.clear_tables()
     host = get_random_string(6)
-    lobby_id = create_game_post(host, client).json()["lobby_id"]
+    lobby_id = create_game_post(host, "", client).json()["lobby_id"]
     expected_players = create_players(1, lobby_id)
     expected_players.insert(0,host)
     connect_and_start_game_2_players(expected_players, client)
@@ -31,7 +31,7 @@ def test_start_game_two_players():
 def test_start_game_not_host():
     db.clear_tables()
     host = get_random_string(6)
-    lobby_id = create_game_post(host, client).json()["lobby_id"]
+    lobby_id = create_game_post(host, "", client).json()["lobby_id"]
     expected_players = create_players(1, lobby_id)
     expected_players.insert(0,host)
     with client.websocket_connect("/lobby/1") as websocket1, \
