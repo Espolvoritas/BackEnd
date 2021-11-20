@@ -174,7 +174,7 @@ async def use_salems_witch(player_id: int = Body(...), card_type: str = Body(...
             raise HTTPException(status_code=403, detail="Player can't use Salem's witch outside his/her turn.")
         salem_card = get_card_by_id(21)
         player_cards = get_card_list(player_id)
-        if not salem_card in player_cards:
+        if not salem_card.card_id in player_cards:
             raise HTTPException(status_code=403, detail="Player doesn't have Salem's witch card or has already used it.")
         else:
             if card_type == "MONSTER":
