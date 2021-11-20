@@ -122,7 +122,8 @@ class Player(db.Entity):
     nickname = Required(str)
     alive = Required(bool, default=True)
     current_dice_roll = Optional(int, default=0)
-    trapped = Optional(bool)
+    trapped = Required(int, default=0)
+    in_portal = Required(bool, default=False)
     
     #Relationship attributes
     color = Optional(Color, reverse="players")
