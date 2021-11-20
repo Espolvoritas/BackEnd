@@ -1,6 +1,7 @@
 from fastapi import APIRouter, status, WebSocket, WebSocketDisconnect, HTTPException, Body
 from pony.orm import db_session, select
 from asyncio import sleep
+import asyncio
 import logging
 import Misterio.database as db
 from Misterio.constants import *
@@ -126,6 +127,7 @@ async def accuse(room: int = Body(...), monster: int = Body(...), victim: int = 
 @gameBoard.websocket("/gameBoard/{userID}")
 async def handleTurn(websocket: WebSocket, userID: int):
 	
+	task = None
 	with db_session:
 		player = db.Player.get(player_id=userID)
 		if player is None or player.lobby is None or gameBoard_manager.exists(userID):
@@ -136,15 +138,15 @@ async def handleTurn(websocket: WebSocket, userID: int):
 		await gameBoard_manager.send_personal_message({"code" : WS_CURR_PLAYER + WS_CARD_LIST +  
 		WS_POS_LIST, "currentPlayer" : get_current_turn(lobby.game_id), "cards" : get_card_list(userID), 
 		"positions" : positionList(lobby.game_id)}, websocket)
-
 	try:
+		task = asyncio.create_task(gameBoard_manager.empty_buffer(websocket))
 		while(True):
 			message = await websocket.receive_json()
 			if message['code'] == "PICK_CARD":
 				gameBoard_manager.pickedCard_id = message['card']
 	except WebSocketDisconnect:
 		gameBoard_manager.disconnect(websocket, lobby.game_id)
-		await gameBoard_manager.lobby_broadcast(await gameBoard_manager.getPlayers(lobby.game_id), lobby.game_id)
+		task.cancel()
 
 @gameBoard.post("/rollDice", status_code=status.HTTP_200_OK)
 async def rollDice(playerId: int = Body(...), roll: int = Body(...)):
