@@ -191,7 +191,7 @@ async def handle_turn(websocket: WebSocket, player_id: int):
                     "code": 8192,
                     "msg":{"user": player_name, "color": player_color,"str": message["msg"]}
                 }
-                await game_manager.lobby_broadcast(broadcast)
+                await game_manager.lobby_broadcast(broadcast, lobby.lobby_id)
 
     except WebSocketDisconnect:
         game_manager.disconnect(websocket, lobby.lobby_id)

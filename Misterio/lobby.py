@@ -124,7 +124,7 @@ async def handle_lobby(websocket: WebSocket, player_id: int):
                     "code": 8192,
                     "msg":{"user": player_name, "color": player_color,"str": message["msg"]}
                 }
-                await manager.lobby_broadcast(broadcast)
+                await manager.lobby_broadcast(broadcast, lobby.lobby_id)
     except WebSocketDisconnect:
         if isHost:
             await manager.disconnect_everyone(websocket, lobby.lobby_id)
