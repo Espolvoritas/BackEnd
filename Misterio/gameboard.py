@@ -178,11 +178,12 @@ async def use_salems_witch(player_id: int = Body(...), card_type: str = Body(...
             raise HTTPException(status_code=403, detail="Player doesn't have Salem's witch card or has already used it.")
         else:
             if card_type == "MONSTER":
-                envelope_card = lobby.game.monster
+                envelope_card = lobby.game.monster.card_id
             elif card_type == "VICTIM":
-                envelope_card = lobby.game.victim
+                envelope_card = lobby.game.victim.card_id
             elif card_type == "ROOM":
-                envelope_card = lobby.game.room
+                envelope_card = lobby.game.room.card_id
+            player.cards.remove(salem_card)
     message = {
         "code": WS_CURR_PLAYER + WS_SALEM,
         "current_player": get_current_turn(lobby.lobby_id),
