@@ -58,6 +58,8 @@ async def accuse(room: int = Body(...), monster: int = Body(...), victim: int = 
                 "won": won
             }
         }
+        if won:
+            status_broadcast["data"]["envelope"] = [lobby.game.monster.card_id, lobby.game.victim.card_id, lobby.game.room.card_id]
         await game_manager.lobby_broadcast(status_broadcast, lobby.lobby_id)
         await game_manager.update_turn(lobby.lobby_id)
         if not won:
