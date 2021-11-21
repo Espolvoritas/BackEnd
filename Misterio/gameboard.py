@@ -186,9 +186,9 @@ async def handle_turn(websocket: WebSocket, player_id: int):
             message = await websocket.receive_json()
             if message["code"] == "PICK_CARD":
                 game_manager.picked_card_id = message["card"]
-            elif message['code'] & 8192:
+            elif message['code'] & WS_CHAT_MSG:
                 broadcast = {
-                    "code": 8192,
+                    "code": WS_CHAT_MSG,
                     "msg":{"user": player_name, "color": player_color,"str": message["msg"]}
                 }
                 await game_manager.lobby_broadcast(broadcast, lobby.lobby_id)

@@ -118,9 +118,9 @@ async def handle_lobby(websocket: WebSocket, player_id: int):
         await manager.lobby_broadcast(await manager.get_players(lobby.lobby_id), lobby.lobby_id)
         while True:
             message = await websocket.receive_json()
-            if message['code'] & 8192:
+            if message['code'] & WS_CHAT_MSG:
                 broadcast = {
-                    "code": 8192,
+                    "code": WS_CHAT_MSG,
                     "msg":{"user": player_name, "color": get_player_color(player_id),"str": message["msg"]}
                 }
                 await manager.lobby_broadcast(broadcast, lobby.lobby_id)
