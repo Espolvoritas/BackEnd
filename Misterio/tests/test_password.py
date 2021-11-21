@@ -29,9 +29,9 @@ def test_invalid_password():
     expected_players = [host]
     response = join_game_post(lobby_id, get_random_string(6), "incorrectpassword", client)
     print(response.json())
-    assert (response.status_code == 400)
+    assert (response.status_code == 401)
 
     response = join_game_post(lobby_id, get_random_string(6), "", client)
     print(response.json())
-    assert (response.status_code == 400)
+    assert (response.status_code == 401)
 

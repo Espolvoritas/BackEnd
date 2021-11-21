@@ -43,9 +43,9 @@ def test_invalid_player():
 def test_two_lobbys():
     db.clear_tables()
     host1 = get_random_string(6)
-    game1 = create_game_post(host1, client)
+    game1 = create_game_post(host1, "", client)
     host2 = get_random_string(6)
-    game2 = create_game_post(host2, client)
+    game2 = create_game_post(host2, "", client)
     with client.websocket_connect("/lobby/1") as websocket1, \
         client.websocket_connect("/lobby/2") as websocket2:
         try:

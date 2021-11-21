@@ -20,8 +20,9 @@ async def create_new_game(name: str = Body(...), host: str = Body(...), password
             raise HTTPException(status_code=400, detail="The game name is already in use")
         new_player = db.Player(nickname=host)
         new_game = db.Lobby(name=name, host=new_player, is_started=False)
+        print(password)
         if (password != ""):
-            lobby.password = password
+            new_game.password = password
         flush()
         new_game.add_player(new_player)
         return {"lobby_id": new_game.lobby_id, "player_id": new_player.player_id}
@@ -38,6 +39,7 @@ async def get_available_games():
             game["id"] = g.lobby_id
             game["players"] = int(g.player_count)
             game["host"] = g.host.nickname
+            print(g.password)
             if g.password == "":
             	game["password"] = False
             else:
@@ -83,10 +85,10 @@ async def join_lobby(lobby_id: int = Body(...), player_nickname: str = Body(...)
         nickname_is_taken = player_nickname in existing_nicknames
         if nickname_is_taken:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Nickname already in use")
-        if (lobby.password != ""):
-            lobby_password = base64.b64decode(lobby.password).decode("ascii")
+        if (chosen_lobby.password != ""):
+            lobby_password = base64.b64decode(chosen_lobby.password).decode("ascii")
             if password != lobby_password:
-                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid password")
+                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid password")
         if chosen_lobby is not None and not nickname_is_taken:
             new_player = db.Player(nickname=str(player_nickname))
             flush() # flush so the new_player is committed to the database
