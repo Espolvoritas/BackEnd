@@ -3,7 +3,7 @@ from pony.orm import db_session, flush, select
 from starlette.responses import Response
 import logging
 import asyncio
-
+import base64
 import Misterio.database as db
 import Misterio.manager as mng
 from Misterio.functions import get_lobby_by_id, get_player_by_id
@@ -14,12 +14,15 @@ logger = logging.getLogger("lobby")
 manager = mng.ConnectionManager()
 
 @lobby.post("/createNew", status_code=status.HTTP_201_CREATED)
-async def create_new_game(name: str = Body(...), host: str = Body(...)):
+async def create_new_game(name: str = Body(...), host: str = Body(...), password: str = Body(...)):
     with db_session:
         if db.Lobby.get(name=name) is not None:
             raise HTTPException(status_code=400, detail="The game name is already in use")
         new_player = db.Player(nickname=host)
         new_game = db.Lobby(name=name, host=new_player, is_started=False)
+        print(password)
+        if (password != ""):
+            new_game.password = password
         flush()
         new_game.add_player(new_player)
         return {"lobby_id": new_game.lobby_id, "player_id": new_player.player_id}
@@ -36,7 +39,11 @@ async def get_available_games():
             game["id"] = g.lobby_id
             game["players"] = int(g.player_count)
             game["host"] = g.host.nickname
-            game["password"] = False #We dont have passwords yet
+            print(g.password)
+            if g.password == "":
+            	game["password"] = False
+            else:
+                game["password"] = True
             game_list.append(game)
     if not game_list:
         return Response(status_code=status.HTTP_204_NO_CONTENT)
@@ -68,7 +75,7 @@ async def start_game(player_id: int = Body(...)):
 
 
 @lobby.post("/joinCheck", status_code=status.HTTP_200_OK)
-async def join_lobby(lobby_id: int = Body(...), player_nickname: str = Body(...)):
+async def join_lobby(lobby_id: int = Body(...), player_nickname: str = Body(...), password: str = Body(...)):
 
     with db_session:
         chosen_lobby = get_lobby_by_id(lobby_id)
@@ -78,13 +85,17 @@ async def join_lobby(lobby_id: int = Body(...), player_nickname: str = Body(...)
         nickname_is_taken = player_nickname in existing_nicknames
         if nickname_is_taken:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Nickname already in use")
+        if (chosen_lobby.password != ""):
+            lobby_password = base64.b64decode(chosen_lobby.password).decode("ascii")
+            if password != lobby_password:
+                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid password")
         if chosen_lobby is not None and not nickname_is_taken:
             new_player = db.Player(nickname=str(player_nickname))
             flush() # flush so the new_player is committed to the database
             chosen_lobby.add_player(new_player)
             new_player_id = new_player.player_id
 
-            return { "nickname_is_valid": True, "player_id": new_player_id, "lobby_id_is_valid": True }
+            return { "nickname_is_valid": True, "player_id": new_player_id, "password_is_valid": True }
 
         else:
             raise HTTPException(status_code=400, detail="Unexpected code reached")

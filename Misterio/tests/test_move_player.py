@@ -27,7 +27,7 @@ def find_room(movement):
 def test_bad_move():
     db.clear_tables()
     host = get_random_string(6)
-    lobby_id = create_game_post(host, client).json()["lobby_id"]
+    lobby_id = create_game_post(host, "", client).json()["lobby_id"]
     expected_players = create_players(1, lobby_id)
     expected_players.insert(0,host)
     
@@ -59,7 +59,7 @@ def test_bad_move():
 def test_move():
     db.clear_tables()
     host = get_random_string(6)
-    lobby_id = create_game_post(host, client).json()["lobby_id"]
+    lobby_id = create_game_post(host, "", client).json()["lobby_id"]
     expected_players = create_players(1, lobby_id)
     expected_players.insert(0,host)
     

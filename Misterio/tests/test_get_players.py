@@ -12,7 +12,7 @@ client = TestClient(app)
 def test_no_lobby():
     db.clear_tables()
     host = get_random_string(6)
-    game = create_game_post(host, client)
+    game = create_game_post(host, "", client)
     
     with client.websocket_connect("/lobby/1") as websocket1:
         try:
@@ -28,7 +28,7 @@ def test_no_lobby():
 def test_invalid_player():
     db.clear_tables()
     host = get_random_string(6)
-    game = create_game_post(host, client)
+    game = create_game_post(host, "", client)
     with client.websocket_connect("/lobby/1") as websocket1:
         try:
             data = websocket1.receive_json()
@@ -43,9 +43,9 @@ def test_invalid_player():
 def test_two_lobbys():
     db.clear_tables()
     host1 = get_random_string(6)
-    game1 = create_game_post(host1, client)
+    game1 = create_game_post(host1, "", client)
     host2 = get_random_string(6)
-    game2 = create_game_post(host2, client)
+    game2 = create_game_post(host2, "", client)
     with client.websocket_connect("/lobby/1") as websocket1, \
         client.websocket_connect("/lobby/2") as websocket2:
         try:
@@ -64,7 +64,7 @@ def test_two_lobbys():
 def test_duplicate():
     db.clear_tables()
     host = get_random_string(6)
-    game = create_game_post(host, client)
+    game = create_game_post(host, "", client)
     with client.websocket_connect("/lobby/1") as websocket1:
         try:
             data = websocket1.receive_json()
@@ -80,7 +80,7 @@ def test_duplicate():
 def test_leave_host():
     db.clear_tables()
     host = get_random_string(6)
-    lobby_id = create_game_post(host, client).json()["lobby_id"]
+    lobby_id = create_game_post(host, "", client).json()["lobby_id"]
     expectedPlayers = create_players(1, lobby_id)
     expectedPlayers.insert(0,host)
     with client.websocket_connect("/lobby/1") as websocket1, \
@@ -103,7 +103,7 @@ def test_leave_host():
 def test_get_two_players():
     db.clear_tables()
     host = get_random_string(6)
-    lobby_id = create_game_post(host, client).json()["lobby_id"]
+    lobby_id = create_game_post(host, "", client).json()["lobby_id"]
     expected_players = create_players(1, lobby_id)
     expected_players.insert(0,host)
     with client.websocket_connect("/lobby/1") as websocket1, \

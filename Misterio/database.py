@@ -40,6 +40,7 @@ class Lobby(db.Entity):
     name = Required(str)
     player_count = Required(int, default=0)
     is_started = Required(bool, default=False)
+    password = Optional(str)
     #Relationship attributes
     host = Required("Player", reverse="host_of")
     players = Set("Player", reverse="lobby")

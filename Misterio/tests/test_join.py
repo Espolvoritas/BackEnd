@@ -2,7 +2,7 @@ from fastapi.testclient import TestClient
 from pony.orm import db_session, flush
 from Misterio.server import app
 import Misterio.database as db
-
+from Misterio.testing_utils import join_game_post
 client = TestClient(app)
 
 def test_join():
@@ -28,18 +28,14 @@ def test_join():
         taken_nickname = "foo2"
         free_nickname = "foo4"
 
-    response1 = client.post("/lobby/joinCheck",
-                        headers={"accept": "application/json", "Content-Type" : "application/json"},
-                        json={"lobby_id": lobby_id, "player_nickname": taken_nickname})
-
-    response2 = client.post("/lobby/joinCheck",
-                        headers={"accept": "application/json", "Content-Type" : "application/json"},
-                        json={"lobby_id": lobby_id, "player_nickname": free_nickname}).json()
-
-    print(response1)
-    print(response2)
+    response1 = join_game_post(lobby_id, taken_nickname, "", client)
+    
+    response2 = join_game_post(lobby_id, free_nickname, "", client)
+    
+    print(response1.json())
+    print(response2.json())
 
     db.clear_tables()
 
     assert response1.status_code == 400
-    assert(response2["nickname_is_valid"] == True)
+    assert(response2.json()["nickname_is_valid"] == True)
