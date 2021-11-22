@@ -4,8 +4,8 @@ from pony.orm import db_session
 from asyncio import sleep
 
 import Misterio.database as db
-from Misterio.functions import get_color_list, get_next_turn, set_afk, player_in_turn
-from Misterio.constants import WS_CURR_PLAYER
+from Misterio.functions import get_color_list, get_next_turn, is_afk, set_afk, player_in_turn, get_player_nickname
+from Misterio.constants import WS_CURR_PLAYER, WS_CHAT_MSG
 
 DISCONNECT_TIMER=60
 class userConnections(TypedDict):
@@ -127,6 +127,15 @@ class GameBoardManager(ConnectionManager):
 
     async def connect(self, websocket: WebSocket, player_id):
         await super().connect(websocket,player_id)
+        if is_afk(player_id):
+            with db_session:
+                lobby_id = db.Player.get(player_id=player_id).lobby.lobby_id
+            broadcast = {
+                    "code": WS_CHAT_MSG,
+                    "msg":{"user": "Sistema", "color": 0,"str": "El jugador " +
+                    str(get_player_nickname(player_id)) + " se reconecto"}
+                }
+            await self.lobby_broadcast(broadcast, lobby_id)
         set_afk(player_id,False)
 
     async def disconnect(self, websocket: WebSocket, lobby_id: int):
