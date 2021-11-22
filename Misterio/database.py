@@ -233,13 +233,21 @@ class Stats(db.Entity):
 
     def most_frequent(self, List):
         counter = 0
-        elem = List[0]["id"]
+        sum = 0
+        percentage = 0
+        if List:
+            elem = List[0]["id"]
+        else:
+            elem = -1
         for i in List:
             curr_frequency = i["total"]
+            sum += curr_frequency
             if(curr_frequency > counter):
                 counter = curr_frequency
                 elem = i["id"]
-        return elem
+        if sum > 0:
+            percentage = round(counter*100/sum, 2)
+        return (elem, percentage)
 
     def get_average_game_time(self):
         average = sum(self.game_data["time"])/len(self.game_data["time"])
@@ -273,10 +281,10 @@ class Stats(db.Entity):
         self.game_data["colors"][index]["total"] += 1
 
     def envelope_top_cards(self):
-        top_monster =  self.most_frequent(self.game_data["envelope_monsters"])
-        top_victim = self.most_frequent(self.game_data["envelope_victims"])
-        top_room = self.most_frequent(self.game_data["envelope_rooms"])
-        return top_monster, top_victim, top_room
+        (top_monster, percentage_m) =  self.most_frequent(self.game_data["envelope_monsters"])
+        (top_victim, percentage_v) = self.most_frequent(self.game_data["envelope_victims"])
+        (top_room, percentage_r) = self.most_frequent(self.game_data["envelope_rooms"])
+        return (top_monster, percentage_m), (top_victim, percentage_v), (top_room, percentage_r)
 
     def most_chosen_color(self):
         return self.most_frequent(self.game_data["colors"])
