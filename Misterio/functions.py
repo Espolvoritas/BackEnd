@@ -72,7 +72,8 @@ def get_next_turn(lobby_id: int):
     current_player = lobby.game.current_player
     lobby.game.current_player = current_player.next_player
     set_player_status(current_player)
-    if lobby.game.current_player.alive and (lobby.game.current_player.trapped != trapped_status.TRAPPED.value):
+    if lobby.game.current_player.alive and (lobby.game.current_player.trapped != trapped_status.TRAPPED.value) and \
+        not is_afk(lobby.game.current_player.player_id):
         return lobby.game.current_player.nickname
     else:    
         return get_next_turn(lobby_id)
@@ -131,6 +132,11 @@ def get_used_colors_list(lobby_id: int):
     for c in color_query:
         color_list.append(c.color_id)
     return color_list
+
+@db_session
+def is_afk(player_id: int):
+    player = get_player_by_id(player_id)
+    return player.afk
 
 @db_session
 def set_afk(player_id: int, status:bool):
