@@ -137,6 +137,12 @@ class GameBoardManager(ConnectionManager):
             await sleep(DISCONNECT_TIMER)
             if self.get_websocket(player_id, lobby_id) is None:
                 set_afk(player_id,True)
+                broadcast = {
+                    "code": WS_CHAT_MSG,
+                    "msg":{"user": "Sistema", "color": 0,"str": "El jugador " +
+                    str(get_player_nickname(player_id)) + " se desconectó"}
+                }
+                await self.lobby_broadcast(broadcast, lobby_id)
                 if player_in_turn(player_id):
                     await self.update_turn(lobby_id)
                 
