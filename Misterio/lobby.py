@@ -124,6 +124,7 @@ def get_game_stats():
         global_stats = db.Stats.get(stats_id=1)
         hours, minutes, seconds = global_stats.get_average_game_time()
         (top_monster, percentage_m), (top_victim, percentage_v), (top_room, percentage_r) = global_stats.envelope_top_cards()
+        color_id, color_percent = global_stats.most_chosen_color() 
         response = {
             "won_games": global_stats.won_games,
             "lost_games": global_stats.lost_games,
@@ -131,7 +132,10 @@ def get_game_stats():
             "wrong_accusations": global_stats.wrong_accusations,
             "suspicions_made": global_stats.suspicions_made,
             "trap_falls": global_stats.trap_falls,
-            "most_chosen_color": global_stats.most_chosen_color(),
+            "most_chosen_color": {
+                "color_id": color_id,
+                "percentage": color_percent
+            },
             "top_envelope_monster": {
                 "card_id": top_monster,
                 "percentage": percentage_m
