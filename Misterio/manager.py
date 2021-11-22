@@ -4,7 +4,7 @@ from pony.orm import db_session
 from asyncio import sleep
 
 import Misterio.database as db
-from Misterio.functions import get_color_list, get_next_turn, set_afk
+from Misterio.functions import get_color_list, get_next_turn, set_afk, player_in_turn
 from Misterio.constants import WS_CURR_PLAYER
 
 DISCONNECT_TIMER=60
@@ -130,6 +130,8 @@ class GameBoardManager(ConnectionManager):
             await sleep(DISCONNECT_TIMER)
             if self.get_websocket(player_id, lobby_id) is None:
                 set_afk(player_id,True)
+                if player_in_turn(player_id):
+                    await self.update_turn(lobby_id)
                 
 
     async def update_turn(self, lobby_id: int):
