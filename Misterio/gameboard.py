@@ -244,5 +244,5 @@ async def handle_turn(websocket: WebSocket, player_id: int):
                 await game_manager.lobby_broadcast(broadcast, lobby.lobby_id)
 
     except WebSocketDisconnect:
-        game_manager.disconnect(websocket, lobby.lobby_id)
+        await game_manager.disconnect(websocket, lobby.lobby_id)
         await game_manager.lobby_broadcast(await game_manager.get_players(lobby.lobby_id), lobby.lobby_id)

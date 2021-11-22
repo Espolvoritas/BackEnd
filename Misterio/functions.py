@@ -132,6 +132,11 @@ def get_used_colors_list(lobby_id: int):
         color_list.append(c.color_id)
     return color_list
 
+@db_session
+def set_afk(player_id: int, status:bool):
+    player = get_player_by_id(player_id)
+    player.afk = status
+
 # Database getters
 
 @db_session
