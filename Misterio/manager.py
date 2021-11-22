@@ -151,7 +151,7 @@ class GameBoardManager(ConnectionManager):
         await self.lobby_broadcast({"code": WS_CURR_PLAYER, "current_player": get_next_turn(lobby_id)}, lobby_id)
     
     def get_pick_card(self,lobby_id: int):
-        self.pick_card.get(lobby_id)
+        return self.pick_card[lobby_id]
 
     def set_pick_card(self,lobby_id: int, pick_card):
         self.pick_card[lobby_id] = pick_card
