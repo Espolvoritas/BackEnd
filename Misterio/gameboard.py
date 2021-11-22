@@ -43,6 +43,12 @@ async def get_moves(player_id: int = Body(...), x: int = Body(...), y: int = Bod
         "code": WS_POS_LIST,
         "positions": get_position_list(player.lobby.lobby_id)
     }
+    if trapped:
+        position_broadcast.update({
+            "msg":{"user": "Sistema", "color": 0,"str": "El jugador " +
+            str(get_player_nickname(player_id)) + " cayo en una trampa"}
+        })
+        position_broadcast["code"] += WS_CHAT_MSG
     await game_manager.lobby_broadcast(position_broadcast, player.lobby.lobby_id)
     return {"moves" : moves, "room": room, "trapped": trapped}
 
