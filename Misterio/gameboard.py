@@ -201,6 +201,8 @@ async def handle_turn(websocket: WebSocket, player_id: int):
             await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
             return
         lobby = player.lobby
+        player_name = get_player_nickname(player_id)
+        player_color = get_player_color(player_id)
         await game_manager.connect(websocket, player_id)
         message = {
             "code": WS_CURR_PLAYER + WS_CARD_LIST +    WS_POS_LIST,
@@ -215,6 +217,13 @@ async def handle_turn(websocket: WebSocket, player_id: int):
             message = await websocket.receive_json()
             if message["code"] == "PICK_CARD":
                 game_manager.picked_card_id = message["card"]
+            elif message['code'] & WS_CHAT_MSG:
+                broadcast = {
+                    "code": WS_CHAT_MSG,
+                    "msg":{"user": player_name, "color": player_color,"str": message["msg"]}
+                }
+                await game_manager.lobby_broadcast(broadcast, lobby.lobby_id)
+
     except WebSocketDisconnect:
         game_manager.disconnect(websocket, lobby.lobby_id)
         await game_manager.lobby_broadcast(await game_manager.get_players(lobby.lobby_id), lobby.lobby_id)
