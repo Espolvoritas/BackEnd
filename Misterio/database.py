@@ -213,7 +213,9 @@ def fill_cards():
             Card(card_name=card.name, card_type="VICTIM")
         for card in Room:
             Card(card_name=card.name, card_type="ROOM")
-
+        for card in Salem:
+            Card(card_name=card.name, card_type="SALEM")
+            
 def fill_colors():
     #Colors shouldn"t be modified outside this session
     with db_session:

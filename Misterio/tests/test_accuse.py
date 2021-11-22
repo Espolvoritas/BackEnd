@@ -38,6 +38,7 @@ def test_right_accusation():
                 accuse_post(current_player.player_id,room, monster, victim, client)
                 data = websocket1.receive_json()
                 assert data["data"]["won"] == True
+                assert data["data"]["envelope"] == [monster, victim, room]
                 websocket2.close()
                 data = websocket1.receive_json()
                 websocket1.close()

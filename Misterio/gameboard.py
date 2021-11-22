@@ -2,7 +2,7 @@ from fastapi import APIRouter, status, WebSocket, WebSocketDisconnect, HTTPExcep
 from pony.orm import db_session, select
 from asyncio import sleep
 import logging
-
+from random import choice
 from Misterio.constants import *
 from Misterio.functions import *
 import Misterio.database as db
@@ -58,12 +58,15 @@ async def accuse(room: int = Body(...), monster: int = Body(...), victim: int = 
                 "won": won
             }
         }
+        envelope = [lobby.game.monster.card_id, lobby.game.victim.card_id, lobby.game.room.card_id]
+        if won:
+            status_broadcast["data"]["envelope"] = envelope
         await game_manager.lobby_broadcast(status_broadcast, lobby.lobby_id)
         await game_manager.update_turn(lobby.lobby_id)
         if not won:
             player.commit_die()
         if all_dead(lobby.lobby_id):
-            await game_manager.lobby_broadcast({"code": WS_LOST}, lobby.lobby_id)
+            await game_manager.lobby_broadcast({"code": WS_LOST, "envelope": envelope}, lobby.lobby_id)
 
 @gameBoard.post("/rollDice", status_code=status.HTTP_200_OK)
 async def roll_dice(player_id: int = Body(...), roll: int = Body(...)):
@@ -159,6 +162,34 @@ async def check_player_cards(players: list, suspicion_player: str, sus_websocket
         await game_manager.almost_lobby_broadcast(response_broadcast, [res_websocket, sus_websocket], lobby_id)
     
     return suspicion_card, response_player
+
+@gameBoard.post("/salemsWitch")
+async def use_salems_witch(player_id: int = Body(...)):
+    envelope_card = None
+    with db_session:
+        player = get_player_by_id(player_id)
+        if player is None:
+            raise HTTPException(status_code=400, detail="Player does not exist")
+        lobby = player.lobby
+        if lobby is None:
+            raise HTTPException(status_code=403, detail="Player is not in game.")
+        if not player_in_turn(player_id):
+            raise HTTPException(status_code=403, detail="Player can't use Salem's witch outside his/her turn.")
+        salem_card = get_card_by_id(21)
+        player_cards = get_card_list(player_id)
+        if not salem_card.card_id in player_cards:
+            raise HTTPException(status_code=403, detail="Player doesn't have Salem's witch card or has already used it.")
+        else:
+            envelope = [lobby.game.monster.card_id, lobby.game.victim.card_id, lobby.game.room.card_id]
+            envelope_card = choice(envelope)
+            player.cards.remove(salem_card)
+    message = {
+        "code": WS_SALEM,
+        "current_player": get_current_turn(lobby.lobby_id),
+    }
+    websocket = game_manager.get_websocket(player_id, lobby.lobby_id)
+    await game_manager.almost_lobby_broadcast(message, [websocket], lobby.lobby_id)
+    return {"envelope_card": envelope_card}
 
 
 @gameBoard.websocket("/gameBoard/{player_id}")
