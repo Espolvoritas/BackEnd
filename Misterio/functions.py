@@ -124,6 +124,16 @@ def get_color_list(lobby_id: int):
             color_list.append(c.color_id)
     return color_list
 
+@db_session
+def get_used_colors_list(lobby_id: int):
+    lobby = get_lobby_by_id(lobby_id)
+    color_list = []
+    if lobby:
+        color_query = list(select(p.color for p in lobby.players))
+    for c in color_query:
+        color_list.append(c.color_id)
+    return color_list
+
 # Database getters
 
 @db_session
