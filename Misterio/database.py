@@ -1,7 +1,7 @@
 from pony.orm import Database, PrimaryKey, Optional, Set, Required
 from pony.orm import select, db_session, count
 from random import shuffle, choice
-
+from datetime import datetime
 from Misterio.board import make_board
 from Misterio.enums import *
 from Misterio.constants import trapped_status
@@ -64,7 +64,7 @@ class Lobby(db.Entity):
 
 class Game(db.Entity):
     game_id = PrimaryKey(int, auto=True) 
-
+    start_date = Required(datetime, default=datetime.utcnow())
     #Relationship attributes
     lobby = Required(Lobby, reverse="game")
     current_player = Optional("Player", reverse="current_player_of")
@@ -72,6 +72,11 @@ class Game(db.Entity):
     victim = Optional(Card, reverse="misterio_victim")
     room = Optional(Card, reverse="misterio_room")
     board = Set("Cell", reverse="game")
+
+    def get_game_duration(self):
+        finish_date = datetime.utcnow()
+        duration = finish_date - self.start_date   
+        return duration.total_seconds()
 
     def fill_envelope(self):
         #Get the available cards
