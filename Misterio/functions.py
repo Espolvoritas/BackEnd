@@ -72,11 +72,12 @@ def get_next_turn(lobby_id: int):
     current_player = lobby.game.current_player
     lobby.game.current_player = current_player.next_player
     set_player_status(current_player)
-    if lobby.game.current_player.alive and (lobby.game.current_player.trapped != trapped_status.TRAPPED.value) and \
-        not is_afk(lobby.game.current_player.player_id):
-        return lobby.game.current_player.nickname
-    else:    
-        return get_next_turn(lobby_id)
+    for i in range(0,18):
+        if lobby.game.current_player.alive and (lobby.game.current_player.trapped != trapped_status.TRAPPED.value) \
+         and not is_afk(lobby.game.current_player.player_id):
+            return lobby.game.current_player.nickname
+        current_player = lobby.game.current_player
+        lobby.game.current_player = current_player.next_player
 
 @db_session
 def get_current_turn(lobby_id: int):
