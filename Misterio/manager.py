@@ -1,10 +1,13 @@
 from typing import List, TypedDict
 from fastapi import status, WebSocket
 from pony.orm import db_session
+from asyncio import sleep
+
 import Misterio.database as db
-from Misterio.functions import get_color_list, get_next_turn
+from Misterio.functions import get_color_list, get_next_turn, set_afk
 from Misterio.constants import WS_CURR_PLAYER
 
+DISCONNECT_TIMER=60
 class userConnections(TypedDict):
     websocket: WebSocket
     player_id: int
