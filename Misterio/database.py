@@ -127,6 +127,7 @@ class Player(db.Entity):
     player_id = PrimaryKey(int, auto=True) 
     nickname = Required(str)
     alive = Required(bool, default=True)
+    afk = Required(bool, default=False)
     current_dice_roll = Optional(int, default=0)
     trapped = Required(int, default=0)
     in_portal = Required(bool, default=False)
