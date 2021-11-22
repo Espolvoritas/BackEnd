@@ -1,6 +1,7 @@
 from fastapi import APIRouter, status, WebSocket, WebSocketDisconnect, HTTPException, Body, websockets
 from pony.orm import db_session, select
 from asyncio import sleep
+from random import choice
 import logging
 from random import choice
 from Misterio.constants import *
@@ -142,8 +143,10 @@ async def check_suspicion(player_id: int = Body(...), victim_id: int = Body(...)
     
 async def check_player_cards(players: list, suspicion_player: str, sus_websocket: WebSocket, suspicion: list, lobby_id: int):
     responded = False
+    timer = 0
     response_player = ""
-    suspicion_card = 0
+    game_manager.set_pick_card(lobby_id,None)
+    suspicion_card = None
     while (not responded and len(players)>0):
         next_player = players.pop()
         matches = []
@@ -154,14 +157,20 @@ async def check_player_cards(players: list, suspicion_player: str, sus_websocket
         res_websocket = game_manager.get_websocket(next_player[0], lobby_id)
         if matches:
             if len(matches) > 1:
-                response_message = {"code": WS_PICK_CARD, "matching_cards": matches}
-                #Send next player the option to pick a card
-                await game_manager.send_personal_message(response_message, res_websocket)
-                while game_manager.picked_card_id is None:
-                    #Await for next player to pick a card to show (maybe implement timer)
-                    await sleep(1)
-                suspicion_card = game_manager.picked_card_id
-                game_manager.picked_card_id = None
+                #player went afk before suspicion
+                if is_afk(next_player[0]):
+                    suspicion_card = choice(matches)
+                else:
+                    response_message = {"code": WS_PICK_CARD, "matching_cards": matches}
+                    #Send next player the option to pick a card
+                    await game_manager.send_personal_message(response_message, res_websocket)
+                    while suspicion_card is None and timer < mng.DISCONNECT_TIMER:
+                        suspicion_card = game_manager.get_pick_card(lobby_id)
+                        #Await for next player to pick a card to show (maybe implement timer)
+                        await sleep(1)
+                        timer+=1
+                    if  suspicion_card is None:
+                        suspicion_card = choice(matches)
             else:
                 suspicion_card = matches.pop()
                 response_message = {
@@ -235,7 +244,7 @@ async def handle_turn(websocket: WebSocket, player_id: int):
         while(True):
             message = await websocket.receive_json()
             if message["code"] == "PICK_CARD":
-                game_manager.picked_card_id = message["card"]
+                game_manager.set_pick_card(lobby.lobby_id,message["card"])
             elif message['code'] & WS_CHAT_MSG:
                 broadcast = {
                     "code": WS_CHAT_MSG,

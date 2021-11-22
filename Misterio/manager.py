@@ -16,6 +16,10 @@ class lobbyConnections(TypedDict):
     lobby_id: int
     websockets: List[WebSocket]
 
+class pickCardDict(TypedDict):
+    lobby_id: int
+    picked_card_id: int
+
 class ConnectionManager:
     def __init__(self):
         self.active_connections: userConnections = {}
@@ -116,7 +120,10 @@ class ConnectionManager:
         return response
     
 class GameBoardManager(ConnectionManager):
-    picked_card_id = None 
+
+    def __init__(self):
+        super().__init__()
+        self.pick_card: pickCardDict = {}
 
     async def connect(self, websocket: WebSocket, player_id):
         await super().connect(websocket,player_id)
@@ -136,4 +143,9 @@ class GameBoardManager(ConnectionManager):
 
     async def update_turn(self, lobby_id: int):
         await self.lobby_broadcast({"code": WS_CURR_PLAYER, "current_player": get_next_turn(lobby_id)}, lobby_id)
-        
+    
+    def get_pick_card(self,lobby_id: int):
+        self.pick_card.get(lobby_id)
+
+    def set_pick_card(self,lobby_id: int, pick_card):
+        self.pick_card[lobby_id] = pick_card
