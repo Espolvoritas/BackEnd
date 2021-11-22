@@ -118,6 +118,39 @@ async def pick_color(player_id: int = Body(...), color: int = Body(...)):
             flush()
             await manager.lobby_broadcast(await manager.get_players(player.lobby.lobby_id), player.lobby.lobby_id)
 
+@lobby.get("/stats")
+def get_game_stats():
+    with db_session:
+        global_stats = db.Stats.get(stats_id=1)
+        hours, minutes, seconds = global_stats.get_average_game_time()
+        (top_monster, percentage_m), (top_victim, percentage_v), (top_room, percentage_r) = global_stats.envelope_top_cards()
+        response = {
+            "won_games": global_stats.won_games,
+            "lost_games": global_stats.lost_games,
+            "right_accusations": global_stats.right_accusations,
+            "wrong_accusations": global_stats.wrong_accusations,
+            "suspicions_made": global_stats.suspicions_made,
+            "trap_falls": global_stats.trap_falls,
+            "most_chosen_color": global_stats.most_chosen_color(),
+            "top_envelope_monster": {
+                "card_id": top_monster,
+                "percentage": percentage_m
+            },
+            "top_envelope_victim": {
+                "card_id": top_victim,
+                "percentage": percentage_v
+            },
+            "top_envelope_room": {
+                "card_id": top_room,
+                "percentage": percentage_r
+            },
+            "average_game_time": {
+                "hours": hours,
+                "minutes": minutes,
+                "seconds": seconds
+            } 
+        }
+    return response
 
 @lobby.websocket("/lobby/{player_id}")
 async def handle_lobby(websocket: WebSocket, player_id: int):
