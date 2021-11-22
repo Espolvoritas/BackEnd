@@ -115,6 +115,10 @@ class ConnectionManager:
 class GameBoardManager(ConnectionManager):
     picked_card_id = None 
 
+    async def connect(self, websocket: WebSocket, player_id):
+        await super().connect(websocket,player_id)
+        set_afk(player_id,False)
+
     async def disconnect(self, websocket: WebSocket, lobby_id: int):
         if websocket in self.active_connections.keys():
             player_id = self.active_connections[websocket]
@@ -123,6 +127,8 @@ class GameBoardManager(ConnectionManager):
             await sleep(DISCONNECT_TIMER)
             if self.get_websocket(player_id, lobby_id) is None:
                 set_afk(player_id,True)
+                
+
     async def update_turn(self, lobby_id: int):
         await self.lobby_broadcast({"code": WS_CURR_PLAYER, "current_player": get_next_turn(lobby_id)}, lobby_id)
         
