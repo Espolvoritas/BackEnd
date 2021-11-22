@@ -20,7 +20,6 @@ async def create_new_game(name: str = Body(...), host: str = Body(...), password
             raise HTTPException(status_code=400, detail="The game name is already in use")
         new_player = db.Player(nickname=host)
         new_game = db.Lobby(name=name, host=new_player, is_started=False)
-        print(password)
         if (password != ""):
             new_game.password = password
         flush()
@@ -39,7 +38,6 @@ async def get_available_games():
             game["id"] = g.lobby_id
             game["players"] = int(g.player_count)
             game["host"] = g.host.nickname
-            print(g.password)
             if g.password == "":
             	game["password"] = False
             else:
@@ -70,6 +68,13 @@ async def start_game(player_id: int = Body(...)):
             lobby.game.sort_players()
             lobby.game.shuffle_deck()
             lobby.game.set_starting_positions()
+            global_stats = db.Stats.get(stats_id=1)
+            global_stats.add_monster(lobby.game.monster.card_id)
+            global_stats.add_victim(lobby.game.victim.card_id)
+            global_stats.add_room(lobby.game.room.card_id)
+            colors = get_used_colors_list(lobby.lobby_id)
+            for c in colors:
+                global_stats.add_color(c)
             await manager.lobby_broadcast("STATUS_GAME_STARTED", lobby.lobby_id)
     return {}
 

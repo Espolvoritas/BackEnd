@@ -17,7 +17,6 @@ logger = logging.getLogger("gameboard")
 game_manager = mng.GameBoardManager()
 
 
-#todo check cost < roll and check new_position is in movement range
 @gameBoard.post("/moves", status_code=status.HTTP_200_OK)
 async def get_moves(player_id: int = Body(...), x: int = Body(...), y: int = Body(...), remaining: int = Body(...)):
     room = 0
@@ -56,6 +55,7 @@ async def get_moves(player_id: int = Body(...), x: int = Body(...), y: int = Bod
 async def accuse(room: int = Body(...), monster: int = Body(...), victim: int = Body(...), player_id: int = Body(...)):
     with db_session:
         player = get_player_by_id(player_id)
+        global_stats = db.Stats.get(stats_id = 1)
         if not player or not player.lobby or not player.alive:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="... why?")
         lobby = player.lobby
@@ -70,11 +70,19 @@ async def accuse(room: int = Body(...), monster: int = Body(...), victim: int = 
         envelope = [lobby.game.monster.card_id, lobby.game.victim.card_id, lobby.game.room.card_id]
         if won:
             status_broadcast["data"]["envelope"] = envelope
+            global_stats.right_accusations += 1
+            global_stats.won_games += 1
+            elapsed = lobby.game.get_game_duration()
+            global_stats.game_data["time"].append(elapsed)
         await game_manager.lobby_broadcast(status_broadcast, lobby.lobby_id)
         await game_manager.update_turn(lobby.lobby_id)
         if not won:
             player.commit_die()
+            global_stats.wrong_accusations += 1
         if all_dead(lobby.lobby_id):
+            global_stats.lost_games += 1
+            elapsed = lobby.game.get_game_duration()
+            global_stats.game_durations["time"].append(elapsed)
             await game_manager.lobby_broadcast({"code": WS_LOST, "envelope": envelope}, lobby.lobby_id)
 
 @gameBoard.post("/rollDice", status_code=status.HTTP_200_OK)
@@ -116,6 +124,8 @@ async def check_suspicion(player_id: int = Body(...), victim_id: int = Body(...)
                 currplayer_id = currplayer.next_player.player_id
             players.reverse()
             suspicion = [monster_id, victim_id, room_id]
+            global_stats = db.Stats.get(stats_id = 1)
+            global_stats.suspicions_made += 1
 
     suspicion_broadcast = {
         "code": WS_CURR_PLAYER + WS_SUSPICION,
