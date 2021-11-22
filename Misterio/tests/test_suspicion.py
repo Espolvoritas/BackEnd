@@ -83,6 +83,82 @@ def test_automatic_response():
                 websocket2.close()
                 websocket1.close()
 
+def test_automatic_response():
+    db.clear_tables()
+    host = get_random_string(6)
+    lobby_id = create_game_post(host, client).json()["lobby_id"]
+    expected_players = create_players(1, lobby_id)
+    expected_players.insert(0,host)
+
+    connect_and_start_game_2_players(expected_players, client)
+    
+    with db_session:
+        player1 = db.Lobby.get(lobby_id=lobby_id).game.current_player
+        player2 = player1.next_player 
+        nickname1 = player1.nickname
+        nickname2 = player2.nickname
+        room_cards = select(c for c in player2.cards if c.is_room())
+        room = room_cards.first()
+        room_cell = db.Cell.get(room_name=room.card_name)
+        player1.location = room_cell
+        cards1 = list(player1.cards)
+        cards2 = list(player2.cards)
+        monster = select(c for c in db.Card if c in player1.cards and c.is_monster()).first()
+        victim = select(c for c in db.Card if c in player1.cards and c.is_victim()).first()
+        print(monster.card_name)
+        print(victim.card_name)
+        monster = monster.card_id
+        victim = victim.card_id
+        room = room.card_id
+
+    with client.websocket_connect("/gameBoard/" + str(player1.player_id)) as websocket1:
+        currplayer = websocket1.receive_json()
+        print(currplayer)
+        with client.websocket_connect("/gameBoard/" + str(player2.player_id)) as websocket2:
+            currplayer = websocket2.receive_json()#connection broadcast
+            print(currplayer)
+            try:
+                print("Player 1 Cards: ", cards1)
+                print("Player 2 Cards: ", cards2)
+
+                print("Suspicion: ", victim, monster, room)
+
+                response = suspicion_post(player1.player_id, victim, monster, client)
+                data2 = websocket2.receive_json()
+                print("Sus broadcast 2: ", data2)
+                assert (data2["code"] & 1)
+                assert (data2["code"] & 4)
+                assert (data2["victim"] == victim)
+                assert (data2["monster"] == monster)
+                assert (data2["room"] == room)
+                assert (data2["current_player"] == nickname1)
+                #Turn change
+                data1 = websocket1.receive_json()
+                assert (data1["code"] & 1)
+                assert (data1["current_player"] == nickname2)
+                data2 = websocket2.receive_json()
+                assert (data2["code"] & 1)
+                assert (data2["current_player"] == nickname2)
+                print("Turn change 1: ", data1)
+                print("Turn change 2: ", data2)
+
+                data2 = websocket2.receive_json()
+                assert (data2["code"] & 32)
+                assert (data2["suspicion_player"] == nickname1)
+                assert (data2["card"] == room)
+                print("Player 2 sent card: ", data2)
+
+                assert (response.status_code == 200)
+                assert (response.json()["suspicion_card"] == room)
+                print(response.json())    
+                websocket2.close()
+                data1 = websocket1.receive_json()
+                print("Disconnect player 2: ", data1)
+                websocket1.close()
+            except KeyboardInterrupt:
+                websocket2.close()
+                websocket1.close()
+
 def test_makeSuspicion_2players():
     db.clear_tables()
     host = get_random_string(6)
