@@ -1,11 +1,10 @@
-from pony.orm import Database, PrimaryKey, Optional, Set, Required
+from pony.orm import Database, PrimaryKey, Optional, Set, Required, Json
 from pony.orm import select, db_session, count
 from random import shuffle, choice
 from datetime import datetime
 from Misterio.board import make_board
 from Misterio.enums import *
 from Misterio.constants import trapped_status
-
 
 db = Database()
 
@@ -222,8 +221,95 @@ class Cell(db.Entity):
     
         return reachable
 
+class Stats(db.Entity):
+    stats_id = PrimaryKey(int)
+    won_games = Required(int, default=0)
+    lost_games = Required(int, default=0)
+    right_accusations = Required(int, default=0)
+    wrong_accusations = Required(int, default=0)
+    suspicions_made = Required(int, default=0)
+    trap_falls = Required(int, default=0)
+    game_data = Required(Json, default = {})
+
+    def most_frequent(self, List):
+        counter = 0
+        elem = List[0]["id"]
+        for i in List:
+            curr_frequency = i["total"]
+            if(curr_frequency > counter):
+                counter = curr_frequency
+                elem = i["id"]
+        return elem
+
+    def get_average_game_time(self):
+        average = sum(self.game_data["time"])/len(self.game_data["time"])
+        hours = divmod(average, 3600)
+        minutes = divmod(hours[1],60)
+        seconds = divmod(minutes[1],1)
+        avg_time = (hours[0], minutes[0], seconds[0])
+        return avg_time
+
+    def find(self, lst, key, value):
+        for i, dic in enumerate(lst):
+            if dic[key] == value:
+                return i
+        return -1
+
+
+    def add_monster(self, monster):
+        index = self.find(self.game_data["envelope_monsters"], "id", monster)
+        self.game_data["envelope_monsters"][index]["total"] += 1
+
+    def add_victim(self, victim):
+        index = self.find(self.game_data["envelope_victims"], "id", victim)
+        self.game_data["envelope_victims"][index]["total"] += 1
+
+    def add_room(self, room):
+        index = self.find(self.game_data["envelope_rooms"], "id", room)
+        self.game_data["envelope_rooms"][index]["total"] += 1
+
+    def add_color(self, color):
+        index = self.find(self.game_data["colors"], "id", color)
+        self.game_data["colors"][index]["total"] += 1
+
+    def envelope_top_cards(self):
+        top_monster =  self.most_frequent(self.game_data["envelope_monsters"])
+        top_victim = self.most_frequent(self.game_data["envelope_victims"])
+        top_room = self.most_frequent(self.game_data["envelope_rooms"])
+        return top_monster, top_victim, top_room
+
+    def most_chosen_color(self):
+        return self.most_frequent(self.game_data["colors"])
+    
 db.bind("sqlite", "database.sqlite", create_db=True)  # Connect object `db` with database.
 db.generate_mapping(create_tables=True)  # Generate database
+
+#Global stats table
+with db_session:
+    global_stats = Stats.get(stats_id=1)
+    if global_stats is None:
+        global_stats = Stats(stats_id=1)
+        global_stats.game_data = {
+            "time": [],
+            "colors": [],
+            "envelope_monsters": [],
+            "envelope_victims": [],
+            "envelope_rooms": []
+        }
+        for m,v in zip(Monster, Victim):
+            monster = {"id": m.value, "total": 0}
+            victim = {"id": v.value, "total": 0}
+            global_stats.game_data["envelope_monsters"].append(monster)
+            global_stats.game_data["envelope_victims"].append(victim)
+
+        for r in Room:
+            room = {"id": r.value, "total": 0}
+            global_stats.game_data["envelope_rooms"].append(room)
+
+        for c in ColorCode:
+            color = {"id": c.value, "total": 0}
+            global_stats.game_data["colors"].append(color)
+
 
 # Functions to test and fill database
 def fill_cards():
