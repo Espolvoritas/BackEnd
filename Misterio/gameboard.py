@@ -24,7 +24,7 @@ async def yield_turn(player_id: int = Body(...)):
         player = get_player_by_id(player_id)
         with db_session:
             lobby_id = player.lobby.lobby_id
-        game_manager.update_turn(lobby_id)
+        await game_manager.update_turn(lobby_id)
         broadcast = {
             "code": WS_CHAT_MSG,
             "msg":{"user": "Sistema", "color": 0,"str": "El jugador " +
