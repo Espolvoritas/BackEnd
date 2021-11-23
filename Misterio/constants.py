@@ -1,5 +1,6 @@
 from enum import Enum
 
+import sys
 
 WS_CURR_PLAYER=1
 WS_CARD_LIST=2
@@ -20,5 +21,12 @@ class trapped_status(Enum):
 	TRAPPED=1
 	CAN_LEAVE=2
 
-DISCONNECT_TIMER=60
-CHOOSE_CARD_TIMER=60
+
+#Yes i know, pytest behaviour bad, but otherwise we'd be waiting a full 60 seconds extra per test
+#And nobody's got time for that
+if "pytest" in sys.modules:
+    DISCONNECT_TIMER=1
+    CHOOSE_CARD_TIMER=1
+else: # pragma: no cover
+    DISCONNECT_TIMER=60
+    CHOOSE_CARD_TIMER=60
