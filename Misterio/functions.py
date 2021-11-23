@@ -78,6 +78,7 @@ def get_next_turn(lobby_id: int):
             return lobby.game.current_player.nickname
         current_player = lobby.game.current_player
         lobby.game.current_player = current_player.next_player
+        set_player_status(current_player)
 
 @db_session
 def get_current_turn(lobby_id: int):
