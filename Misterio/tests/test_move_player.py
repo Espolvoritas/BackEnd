@@ -118,7 +118,7 @@ def test_move():
 def test_pass_turn():
     db.clear_tables()
     host = get_random_string(6)
-    lobby_id = create_game_post(host, client).json()["lobby_id"]
+    lobby_id = create_game_post(host, "",client).json()["lobby_id"]
     expected_players = create_players(1, lobby_id)
     expected_players.insert(0,host)
     
@@ -157,7 +157,7 @@ def test_pass_turn():
 def test_room_move():
     db.clear_tables()
     host = get_random_string(6)
-    lobby_id = create_game_post(host, client).json()["lobby_id"]
+    lobby_id = create_game_post(host, "",client).json()["lobby_id"]
     expected_players = create_players(1, lobby_id)
     expected_players.insert(0,host)
     
@@ -205,7 +205,7 @@ def test_room_move():
 def test_portal():
     db.clear_tables()
     host = get_random_string(6)
-    lobby_id = create_game_post(host, client).json()["lobby_id"]
+    lobby_id = create_game_post(host, "",client).json()["lobby_id"]
     expected_players = create_players(1, lobby_id)
     expected_players.insert(0,host)
     
@@ -260,7 +260,7 @@ def test_portal():
 def test_trap():
     db.clear_tables()
     host = get_random_string(6)
-    lobby_id = create_game_post(host, client).json()["lobby_id"]
+    lobby_id = create_game_post(host, "",client).json()["lobby_id"]
     expected_players = create_players(1, lobby_id)
     expected_players.insert(0,host)
     
