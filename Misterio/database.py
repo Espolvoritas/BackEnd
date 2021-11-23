@@ -293,7 +293,7 @@ db.bind("sqlite", "database.sqlite", create_db=True)  # Connect object `db` with
 db.generate_mapping(create_tables=True)  # Generate database
 
 #Global stats table
-with db_session:
+with db_session:# pragma: no cover
     global_stats = Stats.get(stats_id=1)
     if global_stats is None:
         global_stats = Stats(stats_id=1)
