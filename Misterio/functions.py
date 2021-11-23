@@ -17,10 +17,6 @@ def get_room_card_id(room_name: str):
     card_id = db.Card.get(card_name=room_name).card_id
     return card_id
 
-def get_room_card_id(room_name: str):
-    card_id = db.Card.get(card_name=room_name).card_id
-    return card_id
-
 @db_session
 def get_position_list(lobby_id: int):
     position_list = []

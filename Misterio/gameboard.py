@@ -82,7 +82,7 @@ async def accuse(room: int = Body(...), monster: int = Body(...), victim: int = 
         if all_dead(lobby.lobby_id):
             global_stats.lost_games += 1
             elapsed = lobby.game.get_game_duration()
-            global_stats.game_durations["time"].append(elapsed)
+            global_stats.game_data["time"].append(elapsed)
             await game_manager.lobby_broadcast({"code": WS_LOST, "envelope": envelope}, lobby.lobby_id)
 
 @gameBoard.post("/rollDice", status_code=status.HTTP_200_OK)
