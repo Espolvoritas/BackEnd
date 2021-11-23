@@ -5,9 +5,8 @@ from asyncio import sleep
 
 import Misterio.database as db
 from Misterio.functions import get_color_list, get_next_turn, is_afk, set_afk, player_in_turn, get_player_nickname
-from Misterio.constants import WS_CURR_PLAYER, WS_CHAT_MSG
+from Misterio.constants import CHOOSE_CARD_TIMER, WS_CURR_PLAYER, WS_CHAT_MSG
 
-DISCONNECT_TIMER=60
 class userConnections(TypedDict):
     websocket: WebSocket
     player_id: int
@@ -143,7 +142,7 @@ class GameBoardManager(ConnectionManager):
             player_id = self.active_connections[websocket]
             del self.active_connections[websocket]
             self.active_lobbys[lobby_id].remove(websocket)
-            await sleep(DISCONNECT_TIMER)
+            await sleep(CHOOSE_CARD_TIMER)
             if self.get_websocket(player_id, lobby_id) is None:
                 set_afk(player_id,True)
                 broadcast = {

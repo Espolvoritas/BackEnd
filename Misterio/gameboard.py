@@ -164,7 +164,7 @@ async def check_player_cards(players: list, suspicion_player: str, sus_websocket
                     response_message = {"code": WS_PICK_CARD, "matching_cards": matches}
                     #Send next player the option to pick a card
                     await game_manager.send_personal_message(response_message, res_websocket)
-                    while suspicion_card is None and timer < mng.DISCONNECT_TIMER:
+                    while suspicion_card is None and timer < CHOOSE_CARD_TIMER:
                         suspicion_card = game_manager.get_pick_card(lobby_id)
                         #Await for next player to pick a card to show (maybe implement timer)
                         await sleep(1)
