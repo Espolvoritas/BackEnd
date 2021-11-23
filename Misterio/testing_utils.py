@@ -89,6 +89,12 @@ def join_game_post(lobby_id: int, player_nickname: str, password: str, client: T
                 json={"lobby_id": lobby_id, "player_nickname": player_nickname, "password": password}
                 )
 
+def get_stats(client: TestClient):
+    return client.get("/lobby/stats",
+                headers={"accept": "application/json",
+                "Content-Type" : "application/json"},
+                )
+
 def connect_and_start_game_2_players(expected_players: list, client: TestClient):
     
     with client.websocket_connect("/lobby/1") as websocket1:

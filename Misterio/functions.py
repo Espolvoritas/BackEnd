@@ -3,7 +3,6 @@ from Misterio.constants import *
 from Misterio.enums import Room
 import Misterio.database as db
 
-#crashes if position is not valid
 @db_session
 def get_cell_by_coordinates(x, y):
     return select(c for c in db.Cell if c.x == x and c.y == y).first()
@@ -14,10 +13,6 @@ def get_room_cell_id(room_name: str):
             return room.value
 
 @db_session
-def get_room_card_id(room_name: str):
-    card_id = db.Card.get(card_name=room_name).card_id
-    return card_id
-
 def get_room_card_id(room_name: str):
     card_id = db.Card.get(card_name=room_name).card_id
     return card_id
@@ -39,19 +34,22 @@ def get_position_list(lobby_id: int):
 
 @db_session
 def set_player_status(player):
-	cell = player.location
-	if cell.cell_type == "TRAP":
-		if player.trapped == trapped_status.NOT_TRAPPED.value:
-			player.trapped = trapped_status.TRAPPED.value
-		elif player.trapped == trapped_status.TRAPPED.value:
-			player.trapped = trapped_status.CAN_LEAVE.value
-	elif "PORTAL-" in cell.cell_type:
-		player.in_portal = True
+    global_stats = db.Stats.get(stats_id=1)
+    cell = player.location
+    if cell.cell_type == "TRAP":
+        if player.trapped == trapped_status.NOT_TRAPPED.value:
+            player.trapped = trapped_status.TRAPPED.value
+            global_stats.trap_falls += 1 
+        elif player.trapped == trapped_status.TRAPPED.value:
+            player.trapped = trapped_status.CAN_LEAVE.value
+    elif "PORTAL-" in cell.cell_type:
+        player.in_portal = True
+        
 
 @db_session
 def clear_player_status(player):
-	player.trapped = trapped_status.NOT_TRAPPED.value
-	player.in_portal = False
+    player.trapped = trapped_status.NOT_TRAPPED.value
+    player.in_portal = False
 
 @db_session
 def get_reachable(player_id: int):
@@ -122,6 +120,16 @@ def get_color_list(lobby_id: int):
         color_query = lobby.get_available_colors()
         for c in color_query:
             color_list.append(c.color_id)
+    return color_list
+
+@db_session
+def get_used_colors_list(lobby_id: int):
+    lobby = get_lobby_by_id(lobby_id)
+    color_list = []
+    if lobby:
+        color_query = list(select(p.color for p in lobby.players))
+    for c in color_query:
+        color_list.append(c.color_id)
     return color_list
 
 # Database getters
