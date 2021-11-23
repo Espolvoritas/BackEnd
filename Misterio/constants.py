@@ -29,4 +29,4 @@ if "pytest" in sys.modules:
     CHOOSE_CARD_TIMER=1
 else: # pragma: no cover
     DISCONNECT_TIMER=60
-    CHOOSE_CARD_TIMER=60
+    CHOOSE_CARD_TIMER=30
