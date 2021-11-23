@@ -18,18 +18,6 @@ def test_cell_creation():
             print(neighbors)
             for d in neighbors:
                 print(d.x, d.y, d.cell_type)
-
-def test_reachability():
-    with db_session:
-        sampleCell = get_cell_by_coordinates(4, 7)
-        reachable = sampleCell.get_reachable(4)
-        for cell, distance in list(reachable):
-            print(cell.x, cell.y, cell.cell_type, distance)
-
-        sampleCell = get_cell_by_coordinates(12, 7)
-        reachable = sampleCell.get_reachable(6)
-        for cell, distance in list(reachable):
-            print(cell.x, cell.y, cell.cell_type, distance)
    
 def test_get_moves():
     with db_session:

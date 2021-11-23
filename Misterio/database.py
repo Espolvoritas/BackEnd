@@ -4,6 +4,8 @@ from random import shuffle, choice
 
 from Misterio.board import make_board
 from Misterio.enums import *
+from Misterio.constants import trapped_status
+
 
 db = Database()
 
@@ -122,7 +124,8 @@ class Player(db.Entity):
     nickname = Required(str)
     alive = Required(bool, default=True)
     current_dice_roll = Optional(int, default=0)
-    trapped = Optional(bool)
+    trapped = Required(int, default=0)
+    in_portal = Required(bool, default=False)
     
     #Relationship attributes
     color = Optional(Color, reverse="players")
@@ -180,27 +183,39 @@ class Cell(db.Entity):
     def is_trap(self):
         return self.cell_type == "TRAP"
 
-    def get_reachable(self, moves):
+    def get_reachable(self, moves, player):
 
-        if moves == 0:
-            return [(fn, 0) for fn in self.get_free_neighbors()]
+        reachable = []
+
         if moves > 0:
+
             reachable = [(n, moves-1) for n in self.get_neighbors()]
-            reachable = reachable + [(fn, moves) for fn in self.get_free_neighbors()]
+
             already = {e for e, c in reachable} | set([self])
-            special = {e for e, c in reachable if e.is_special()}         
+            
             current = list(reachable)
             new = []
             while current:
                 for c, d in current:
-                    if not c.is_trap():
-                        if d != 0:
-                            new = new + [(n, d-1) for n in c.get_neighbors() if n not in already]
+                    if d != 0:
+                        new = new + [(n, d-1) for n in c.get_neighbors() if n not in already]
+                        #new = new + [(fn, d) for fn in c.getFreeNeighbors() if fn not in already]
+
                 reachable = reachable + list(new)
                 already = already | {c for c, d in new}
                 current = list(new)
                 new = list()
-            return reachable
+            
+            if ("PORTAL-" in player.location.cell_type) and (player.in_portal):
+                reachable = reachable + [(fn, moves) for fn in self.get_free_neighbors()]
+
+            if (player.location.cell_type == "TRAP") and (player.trapped == trapped_status.CAN_LEAVE.value):
+                reachable = reachable + [(fn, moves) for fn in self.get_free_neighbors()]
+
+        if ("ENTRANCE-" in player.location.cell_type) or (player.location.cell_type=="ROOM"):
+            reachable =  reachable + [(fn, moves) for fn in self.get_free_neighbors()]
+    
+        return reachable
 
 db.bind("sqlite", "database.sqlite", create_db=True)  # Connect object `db` with database.
 db.generate_mapping(create_tables=True)  # Generate database
@@ -236,8 +251,6 @@ def fill_cells():
                 cell_index[(cx, cy, t)].room_name = t
                 cell_index[(cx, cy, t)].cell_type = "ROOM"
                 cell_index[(cx, cy, t)].is_room = True
-            if "TRAP" in t:
-                cell_index[(cx, cy, t)].cell_type = "TRAP"
 
         for c in cells:
             for n in neighbors[c]:

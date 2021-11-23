@@ -38,10 +38,26 @@ def get_position_list(lobby_id: int):
     return position_list
 
 @db_session
+def set_player_status(player):
+	cell = player.location
+	if cell.cell_type == "TRAP":
+		if player.trapped == trapped_status.NOT_TRAPPED.value:
+			player.trapped = trapped_status.TRAPPED.value
+		elif player.trapped == trapped_status.TRAPPED.value:
+			player.trapped = trapped_status.CAN_LEAVE.value
+	elif "PORTAL-" in cell.cell_type:
+		player.in_portal = True
+
+@db_session
+def clear_player_status(player):
+	player.trapped = trapped_status.NOT_TRAPPED.value
+	player.in_portal = False
+
+@db_session
 def get_reachable(player_id: int):
     moves = []
     player = get_player_by_id(player_id)
-    reachable_cells = player.location.get_reachable(player.current_dice_roll)
+    reachable_cells = player.location.get_reachable(player.current_dice_roll, player)
     if reachable_cells is not None:
         for cell, distance in reachable_cells:
             option = {"x": 0, "y": 0, "remaining": 0}
@@ -57,10 +73,11 @@ def get_next_turn(lobby_id: int):
     lobby = get_lobby_by_id(lobby_id)
     current_player = lobby.game.current_player
     lobby.game.current_player = current_player.next_player
-    if lobby.game.current_player.alive:
+    set_player_status(current_player)
+    if lobby.game.current_player.alive and (lobby.game.current_player.trapped != trapped_status.TRAPPED.value):
         return lobby.game.current_player.nickname
     else:    
-        get_next_turn(lobby_id)
+        return get_next_turn(lobby_id)
 
 @db_session
 def get_current_turn(lobby_id: int):

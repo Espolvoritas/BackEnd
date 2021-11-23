@@ -21,27 +21,36 @@ game_manager = mng.GameBoardManager()
 @gameBoard.post("/moves", status_code=status.HTTP_200_OK)
 async def get_moves(player_id: int = Body(...), x: int = Body(...), y: int = Body(...), remaining: int = Body(...)):
     room = 0
+    moves = []
+    trapped = False
     with db_session:
         player = get_player_by_id(player_id)
+        clear_player_status(player)
         new_position = get_cell_by_coordinates(x, y)
         if not new_position or player != player.lobby.game.current_player:
             raise HTTPException(status.HTTP_400_BAD_REQUEST)
+        player.location = new_position
         if new_position.is_room():
             room = get_room_cell_id(new_position.room_name)
             player.set_roll(0)
         else:
             player.set_roll(remaining)
-        player.location = new_position
-        moves=get_reachable(player_id)
+            moves=get_reachable(player_id)
         if room == 0 and remaining == 0 and "ENTRANCE-" not in new_position.cell_type:
+            trapped = new_position.cell_type == "TRAP"
             await game_manager.update_turn(player.lobby.lobby_id)
-            moves=[]
     position_broadcast = {
         "code": WS_POS_LIST,
         "positions": get_position_list(player.lobby.lobby_id)
     }
+    if trapped:
+        position_broadcast.update({
+            "msg":{"user": "Sistema", "color": 0,"str": "El jugador " +
+            str(get_player_nickname(player_id)) + " cayo en una trampa"}
+        })
+        position_broadcast["code"] += WS_CHAT_MSG
     await game_manager.lobby_broadcast(position_broadcast, player.lobby.lobby_id)
-    return {"moves" : moves, "room": room}
+    return {"moves" : moves, "room": room, "trapped": trapped}
 
 @gameBoard.post("/accuse")
 async def accuse(room: int = Body(...), monster: int = Body(...), victim: int = Body(...), player_id: int = Body(...)):
