@@ -20,8 +20,10 @@ game_manager = mng.GameBoardManager()
 
 @gameBoard.post("/turnYield", status_code=status.HTTP_200_OK)
 async def yield_turn(player_id: int = Body(...)):
+    player = get_player_by_id(player_id)
+    if player is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST)
     if player_in_turn(player_id):
-        player = get_player_by_id(player_id)
         with db_session:
             lobby_id = player.lobby.lobby_id
         await game_manager.update_turn(lobby_id)
