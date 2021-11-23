@@ -1,9 +1,11 @@
 from typing import List, TypedDict
 from fastapi import status, WebSocket
 from pony.orm import db_session
+from asyncio import sleep
+
 import Misterio.database as db
-from Misterio.functions import get_color_list, get_next_turn
-from Misterio.constants import WS_CURR_PLAYER
+from Misterio.functions import get_color_list, get_next_turn, is_afk, set_afk, player_in_turn, get_player_nickname
+from Misterio.constants import CHOOSE_CARD_TIMER, WS_CURR_PLAYER, WS_CHAT_MSG
 
 class userConnections(TypedDict):
     websocket: WebSocket
@@ -12,6 +14,10 @@ class userConnections(TypedDict):
 class lobbyConnections(TypedDict):
     lobby_id: int
     websockets: List[WebSocket]
+
+class pickCardDict(TypedDict):
+    lobby_id: int
+    picked_card_id: int
 
 class ConnectionManager:
     def __init__(self):
@@ -113,8 +119,47 @@ class ConnectionManager:
         return response
     
 class GameBoardManager(ConnectionManager):
-    picked_card_id = None 
+
+    def __init__(self):
+        super().__init__()
+        self.pick_card: pickCardDict = {}
+
+    async def connect(self, websocket: WebSocket, player_id):
+        await super().connect(websocket,player_id)
+        if is_afk(player_id):
+            with db_session:
+                lobby_id = db.Player.get(player_id=player_id).lobby.lobby_id
+            broadcast = {
+                    "code": WS_CHAT_MSG,
+                    "msg":{"user": "Sistema", "color": 0,"str": "El jugador " +
+                    str(get_player_nickname(player_id)) + " se reconecto"}
+                }
+            await self.lobby_broadcast(broadcast, lobby_id)
+        set_afk(player_id,False)
+
+    async def disconnect(self, websocket: WebSocket, lobby_id: int):
+        if websocket in self.active_connections.keys():
+            player_id = self.active_connections[websocket]
+            del self.active_connections[websocket]
+            self.active_lobbys[lobby_id].remove(websocket)
+            await sleep(CHOOSE_CARD_TIMER)
+            if self.get_websocket(player_id, lobby_id) is None:
+                set_afk(player_id,True)
+                broadcast = {
+                    "code": WS_CHAT_MSG,
+                    "msg":{"user": "Sistema", "color": 0,"str": "El jugador " +
+                    str(get_player_nickname(player_id)) + " se desconectó"}
+                }
+                await self.lobby_broadcast(broadcast, lobby_id)
+                if player_in_turn(player_id):
+                    await self.update_turn(lobby_id)
+                
 
     async def update_turn(self, lobby_id: int):
         await self.lobby_broadcast({"code": WS_CURR_PLAYER, "current_player": get_next_turn(lobby_id)}, lobby_id)
-        
+    
+    def get_pick_card(self,lobby_id: int):
+        return self.pick_card[lobby_id]
+
+    def set_pick_card(self,lobby_id: int, pick_card):
+        self.pick_card[lobby_id] = pick_card

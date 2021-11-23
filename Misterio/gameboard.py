@@ -1,8 +1,9 @@
 from fastapi import APIRouter, status, WebSocket, WebSocketDisconnect, HTTPException, Body, websockets
 from pony.orm import db_session, select
 from asyncio import sleep
-import logging
 from random import choice
+import logging
+
 from Misterio.constants import *
 from Misterio.functions import *
 import Misterio.database as db
@@ -17,6 +18,25 @@ logger = logging.getLogger("gameboard")
 game_manager = mng.GameBoardManager()
 
 
+@gameBoard.post("/turnYield", status_code=status.HTTP_200_OK)
+async def yield_turn(player_id: int = Body(...)):
+    player = get_player_by_id(player_id)
+    if player is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST)
+    if player_in_turn(player_id):
+        with db_session:
+            lobby_id = player.lobby.lobby_id
+        await game_manager.update_turn(lobby_id)
+        broadcast = {
+            "code": WS_CHAT_MSG,
+            "msg":{"user": "Sistema", "color": 0,"str": "El jugador " +
+            str(get_player_nickname(player_id)) + " se quedo sin tiempo y perdio el turno"}
+        }
+        await game_manager.lobby_broadcast(broadcast, lobby_id)
+    else:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+
+#todo check cost < roll and check new_position is in movement range
 @gameBoard.post("/moves", status_code=status.HTTP_200_OK)
 async def get_moves(player_id: int = Body(...), x: int = Body(...), y: int = Body(...), remaining: int = Body(...)):
     room = 0
@@ -142,8 +162,10 @@ async def check_suspicion(player_id: int = Body(...), victim_id: int = Body(...)
     
 async def check_player_cards(players: list, suspicion_player: str, sus_websocket: WebSocket, suspicion: list, lobby_id: int):
     responded = False
+    timer = 0
     response_player = ""
-    suspicion_card = 0
+    game_manager.set_pick_card(lobby_id,None)
+    suspicion_card = None
     while (not responded and len(players)>0):
         next_player = players.pop()
         matches = []
@@ -154,14 +176,20 @@ async def check_player_cards(players: list, suspicion_player: str, sus_websocket
         res_websocket = game_manager.get_websocket(next_player[0], lobby_id)
         if matches:
             if len(matches) > 1:
-                response_message = {"code": WS_PICK_CARD, "matching_cards": matches}
-                #Send next player the option to pick a card
-                await game_manager.send_personal_message(response_message, res_websocket)
-                while game_manager.picked_card_id is None:
-                    #Await for next player to pick a card to show (maybe implement timer)
-                    await sleep(1)
-                suspicion_card = game_manager.picked_card_id
-                game_manager.picked_card_id = None
+                #player went afk before suspicion
+                if is_afk(next_player[0]):
+                    suspicion_card = choice(matches)
+                else:
+                    response_message = {"code": WS_PICK_CARD, "matching_cards": matches}
+                    #Send next player the option to pick a card
+                    await game_manager.send_personal_message(response_message, res_websocket)
+                    while suspicion_card is None and timer < CHOOSE_CARD_TIMER:
+                        suspicion_card = game_manager.get_pick_card(lobby_id)
+                        #Await for next player to pick a card to show (maybe implement timer)
+                        await sleep(1)
+                        timer+=1
+                    if  suspicion_card is None:
+                        suspicion_card = choice(matches)
             else:
                 suspicion_card = matches.pop()
                 response_message = {
@@ -235,7 +263,7 @@ async def handle_turn(websocket: WebSocket, player_id: int):
         while(True):
             message = await websocket.receive_json()
             if message["code"] == "PICK_CARD":
-                game_manager.picked_card_id = message["card"]
+                game_manager.set_pick_card(lobby.lobby_id,message["card"])
             elif message['code'] & WS_CHAT_MSG:
                 broadcast = {
                     "code": WS_CHAT_MSG,
@@ -244,5 +272,5 @@ async def handle_turn(websocket: WebSocket, player_id: int):
                 await game_manager.lobby_broadcast(broadcast, lobby.lobby_id)
 
     except WebSocketDisconnect:
-        game_manager.disconnect(websocket, lobby.lobby_id)
+        await game_manager.disconnect(websocket, lobby.lobby_id)
         await game_manager.lobby_broadcast(await game_manager.get_players(lobby.lobby_id), lobby.lobby_id)

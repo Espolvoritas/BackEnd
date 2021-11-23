@@ -92,7 +92,13 @@ def join_game_post(lobby_id: int, player_nickname: str, password: str, client: T
 def get_stats(client: TestClient):
     return client.get("/lobby/stats",
                 headers={"accept": "application/json",
+                "Content-Type" : "application/json"})
+
+def yield_turn_post(player_id: int, client: TestClient):
+    return client.post("/gameBoard/turnYield",
+                headers={"accept": "application/json",
                 "Content-Type" : "application/json"},
+                json=f"{player_id}"
                 )
 
 def connect_and_start_game_2_players(expected_players: list, client: TestClient):
