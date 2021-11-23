@@ -3,7 +3,7 @@ from pony.orm import db_session, select
 from asyncio import sleep
 from random import choice
 import logging
-from random import choice
+
 from Misterio.constants import *
 from Misterio.functions import *
 import Misterio.database as db
@@ -18,6 +18,23 @@ logger = logging.getLogger("gameboard")
 game_manager = mng.GameBoardManager()
 
 
+@gameBoard.post("/turnYield", status_code=status.HTTP_200_OK)
+async def yield_turn(player_id: int = Body(...)):
+    if player_in_turn(player_id):
+        player = get_player_by_id(player_id)
+        with db_session:
+            lobby_id = player.lobby.lobby_id
+        game_manager.update_turn(lobby_id)
+        broadcast = {
+            "code": WS_CHAT_MSG,
+            "msg":{"user": "Sistema", "color": 0,"str": "El jugador " +
+            str(get_player_nickname(player_id)) + " se quedo sin tiempo y perdio el turno"}
+        }
+        await game_manager.lobby_broadcast(broadcast, lobby_id)
+    else:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+
+#todo check cost < roll and check new_position is in movement range
 @gameBoard.post("/moves", status_code=status.HTTP_200_OK)
 async def get_moves(player_id: int = Body(...), x: int = Body(...), y: int = Body(...), remaining: int = Body(...)):
     room = 0
